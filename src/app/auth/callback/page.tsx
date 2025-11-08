@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/hooks/use-auth';
-import { jwtDecode } from 'jose';
+import { decodeJwt } from 'jose';
 
 export default function AuthCallbackPage() {
     const router = useRouter();
@@ -20,7 +20,7 @@ export default function AuthCallbackPage() {
                 // Decode the JWT to get user info.
                 // NOTE: In a real production app, you would also verify the token's signature.
                 // For this project, we'll trust the token from Google's redirect.
-                const decodedToken: { email: string, sub: string } = jwtDecode(id_token);
+                const decodedToken: { email: string, sub: string } = decodeJwt(id_token);
                 const userEmail = decodedToken.email;
                 
                 // This is a placeholder for the real zkAddress, which would be derived
