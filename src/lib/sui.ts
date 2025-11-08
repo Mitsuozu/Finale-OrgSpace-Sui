@@ -6,86 +6,73 @@ import { getFullnodeUrl, SuiClient } from '@mysten/sui.js/client';
 import { Ed25519Keypair } from '@mysten/sui.js/keypairs/ed25519';
 import { TransactionBlock } from '@mysten/sui.js/transactions';
 import type { Member } from './types';
-
-// TODO: Replace with your deployed package and object IDs from your `sui client publish` output.
-// These are placeholders from the README.md
-const PACKAGE_ID = '0x647474de5fd49990644a5bc3cb8ae1792ebb489ba85a42d848812fe91c433967'; 
-const ADMIN_CAP_ID = '0x25f76f11e9c3ccf1bd7cf5daf3ae01dd936a7c1fd6388cbfcd13dc25c0c15bb0';
-const REGISTRY_ID = '0x1aff4634dc9178e151cfc4181edcb9654c78ef3fc5816e9cbd74c80de663046d';
-
-
-const MODULE_NAME = 'membership_badge';
-
-// Initialize Sui Client
-const suiClient = new SuiClient({ url: getFullnodeUrl('testnet') });
+import { PACKAGE_ID, REGISTRY_ID, ADMIN_CAP_ID, MODULE_NAME, SUI_CLIENT } from './sui-utils';
+import type { ZkLoginSignature } from '@mysten/zklogin';
 
 // This is the server's keypair for signing transactions.
 // IMPORTANT: In a production environment, this private key must be stored
 // securely (e.g., in a secret manager) and not hardcoded.
 const serverKeypair = () => {
-    // For now, we'll use a mock keypair for local development if the env var isn't set.
     if (!process.env.SERVER_PRIVATE_KEY) {
         console.warn("SERVER_PRIVATE_KEY not set, using a mock keypair. Do not use in production.");
         return new Ed25519Keypair();
     }
     const privateKey = process.env.SERVER_PRIVATE_KEY;
-    // Private key is expected to be a Base64 encoded string.
     const privateKeyBytes = Buffer.from(privateKey, 'base64');
-    // We may need to trim the first byte if it's a 0 for some encoding schemes.
-    const keypair = Ed25519Keypair.fromSecretKey(privateKeyBytes.slice(privateKeyBytes[0] === 0 ? 1 : 0));
-    return keypair;
+    return Ed25519Keypair.fromSecretKey(privateKeyBytes.slice(privateKeyBytes[0] === 0 ? 1 : 0));
 };
 
 type RegistrationData = Omit<Member, 'id' | 'status'> & {emailDomain: string, organization: string};
 
 /**
  * Calls the `register_member` function on the smart contract.
- * The member signs this transaction themselves.
- * @param data - The member's registration data including emailDomain and organization.
- * @param useMock - If true, simulates the transaction without sending it.
+ * This transaction is signed with a zkLogin signature.
+ * @param data - The member's registration data.
+ * @param zkLoginSignature - The zkLogin signature.
  */
-export async function registerMemberOnSui(data: RegistrationData, useMock = false) {
-    console.log('Registering member on Sui:', data.name);
+export async function registerMemberOnSui(data: RegistrationData, zkLoginSignature: ZkLoginSignature) {
+    console.log('🔗 Registering member on Sui blockchain...');
+    const tx = new TransactionBlock();
     
-    if (useMock) {
-        console.log('--- MOCK MODE: register_member ---');
-        console.log(`Would call ${PACKAGE_ID}::${MODULE_NAME}::register_member`);
-        console.log('With arguments:', REGISTRY_ID, data.emailDomain, data.organization);
-        await new Promise(resolve => setTimeout(resolve, 500));
-        return { success: true, digest: 'mock-digest-for-register_member' };
+    // Set sender to the zkLogin address
+    tx.setSender(data.address);
+    
+    // Call the smart contract function
+    tx.moveCall({
+        target: `${PACKAGE_ID}::${MODULE_NAME}::register_member`,
+        arguments: [
+            tx.object(REGISTRY_ID),
+            tx.pure(data.emailDomain),
+            tx.pure(data.organization),
+        ],
+    });
+    
+    // Execute the transaction with the zkLogin signature
+    const result = await SUI_CLIENT.executeTransactionBlock({
+        transactionBlock: await tx.build({ client: SUI_CLIENT }),
+        signature: zkLoginSignature,
+        options: {
+            showEffects: true,
+            showEvents: true,
+        },
+    });
+
+    if (result.effects?.status.status !== 'success') {
+        throw new Error(`Transaction failed with status: ${result.effects?.status.error}`);
     }
 
-    try {
-        const keypair = serverKeypair(); // This should be the *user's* zkLogin keypair/signature
-        const tx = new TransactionBlock();
-
-        tx.moveCall({
-            target: `${PACKAGE_ID}::${MODULE_NAME}::register_member`,
-            arguments: [
-                tx.object(REGISTRY_ID),
-                tx.pure(data.emailDomain),
-                tx.pure(data.organization),
-            ],
-        });
-
-        console.log('Executing transaction (user-signed)...');
-        // In a real app, this would be signed and executed by the user's wallet
-        const result = await suiClient.signAndExecuteTransactionBlock({
-            signer: keypair, // Replace with user's wallet signer
-            transactionBlock: tx,
-            options: { showEffects: true },
-        });
-
-        console.log('Transaction successful. Digest:', result.digest);
-        if (result.effects?.status.status !== 'success') {
-            throw new Error(`Transaction failed with status: ${result.effects?.status.error}`);
-        }
-        return { success: true, digest: result.digest };
-
-    } catch (error) {
-        console.error('Error in registerMemberOnSui:', error);
-        throw new Error('Failed to execute registration transaction.');
-    }
+    // Extract the badge ID from the events
+    const memberRegisteredEvent = result.events?.find(
+        e => e.type.endsWith('::membership_badge::MemberRegistered')
+    );
+    
+    const badgeId = memberRegisteredEvent?.parsedJson?.badge_id;
+    
+    return {
+        success: true,
+        digest: result.digest,
+        badgeId,
+    };
 }
 
 
@@ -94,68 +81,110 @@ export async function registerMemberOnSui(data: RegistrationData, useMock = fals
  * This is a read-only call.
  * @param badgeId - The ID of the badge to verify.
  * @param holderAddress - The claimed address of the badge holder.
- * @param useMock - If true, simulates the call.
  */
-export async function verifyBadgeOnSui(badgeId: string, holderAddress: string, useMock = false) {
-    if (useMock) {
-        console.log('--- MOCK MODE: verify_badge ---');
-        return { success: true, isValid: true };
+export async function verifyBadgeOnSui(badgeId: string, holderAddress: string) {
+  const tx = new TransactionBlock();
+  
+  tx.moveCall({
+    target: `${PACKAGE_ID}::${MODULE_NAME}::verify_badge`,
+    arguments: [
+      tx.object(badgeId),
+      tx.object(REGISTRY_ID),
+      tx.pure(holderAddress),
+    ],
+  });
+  
+  const result = await SUI_CLIENT.devInspectTransactionBlock({
+    transactionBlock: tx,
+    sender: holderAddress,
+  });
+  
+  if (result.effects.status.status !== 'success') {
+      throw new Error(`Verification check failed: ${result.effects.status.error}`);
+  }
+  
+  // The return value is a boolean, encoded as a u8. 1 is true, 0 is false.
+  const isValid = result.results?.[0]?.returnValues?.[0]?.[0] === 1;
+  
+  return { isValid };
+}
+
+/**
+ * Checks if a domain is whitelisted by calling the `is_domain_allowed` function.
+ * @param domain - The domain to check (e.g., "@university.edu").
+ */
+export async function isDomainWhitelisted(domain: string) {
+    const tx = new TransactionBlock();
+    tx.moveCall({
+        target: `${PACKAGE_ID}::${MODULE_NAME}::is_domain_allowed`,
+        arguments: [tx.object(REGISTRY_ID), tx.pure(domain)],
+    });
+
+    // An arbitrary address can be used for devInspect
+    const sender = '0x0000000000000000000000000000000000000000000000000000000000000000';
+
+    const result = await SUI_CLIENT.devInspectTransactionBlock({
+        transactionBlock: tx,
+        sender: sender,
+    });
+
+    if (result.effects.status.status !== 'success') {
+      throw new Error(`Domain check failed: ${result.effects.status.error}`);
     }
-    // Implement read-only call using devInspectTransactionBlock
-    return { success: false, isValid: false, message: "Not implemented yet." };
+
+    const isAllowed = result.results?.[0]?.returnValues?.[0]?.[0] === 1;
+    return isAllowed;
 }
 
 /**
  * Calls admin functions on the smart contract (add/remove domain, revoke membership).
- * These transactions must be signed by the admin.
+ * These transactions must be signed by the admin's keypair.
  * @param action - The admin action to perform.
  * @param payload - The data required for the action.
- * @param useMock - If true, simulates the transaction.
  */
 export async function executeAdminTransaction(
     action: 'add_allowed_domain' | 'remove_allowed_domain' | 'revoke_membership',
-    payload: { domain?: string; memberAddress?: string },
-    useMock = false
+    payload: { domain?: string; memberAddress?: string }
 ) {
-    if (useMock) {
-        console.log(`--- MOCK MODE: ${action} ---`);
-        console.log('Payload:', payload);
-        await new Promise(resolve => setTimeout(resolve, 500));
-        return { success: true, digest: `mock-digest-for-${action}` };
-    }
+    const keypair = serverKeypair(); // Admin's keypair
+    const tx = new TransactionBlock();
+    
+    let target: `${string}::${string}::${string}`;
+    const args: any[] = [tx.object(ADMIN_CAP_ID), tx.object(REGISTRY_ID)];
 
-    try {
-        const keypair = serverKeypair(); // Admin's keypair
-        const tx = new TransactionBlock();
-        let target: `${string}::${string}::${string}` | undefined;
-        const args: any[] = [tx.object(ADMIN_CAP_ID), tx.object(REGISTRY_ID)];
-
-        if (action === 'add_allowed_domain' && payload.domain) {
+    switch (action) {
+        case 'add_allowed_domain':
+            if (!payload.domain) throw new Error('Domain is required for add_allowed_domain');
             target = `${PACKAGE_ID}::${MODULE_NAME}::add_allowed_domain`;
             args.push(tx.pure(payload.domain));
-        } else if (action === 'remove_allowed_domain' && payload.domain) {
+            break;
+        case 'remove_allowed_domain':
+            if (!payload.domain) throw new Error('Domain is required for remove_allowed_domain');
             target = `${PACKAGE_ID}::${MODULE_NAME}::remove_allowed_domain`;
             args.push(tx.pure(payload.domain));
-        } else if (action === 'revoke_membership' && payload.memberAddress) {
+            break;
+        case 'revoke_membership':
+            if (!payload.memberAddress) throw new Error('Member address is required for revoke_membership');
             target = `${PACKAGE_ID}::${MODULE_NAME}::revoke_membership`;
             args.push(tx.pure(payload.memberAddress));
-        } else {
-            throw new Error('Invalid action or missing payload for admin transaction.');
-        }
-
-        tx.moveCall({ target, arguments: args });
-
-        console.log(`Executing admin transaction: ${action}...`);
-        const result = await suiClient.signAndExecuteTransactionBlock({
-            signer: keypair,
-            transactionBlock: tx,
-        });
-        
-        console.log('Admin transaction successful. Digest:', result.digest);
-        return { success: true, digest: result.digest };
-
-    } catch (error) {
-        console.error(`Error in ${action}:`, error);
-        throw new Error(`Failed to execute ${action} transaction.`);
+            break;
+        default:
+            throw new Error('Invalid admin action.');
     }
+
+    tx.moveCall({ target, arguments: args });
+
+    console.log(`Executing admin transaction: ${action}...`);
+    const result = await SUI_CLIENT.signAndExecuteTransactionBlock({
+        signer: keypair,
+        transactionBlock: tx,
+        options: { showEffects: true },
+    });
+    
+    if (result.effects?.status.status !== 'success') {
+        throw new Error(`Transaction failed: ${result.effects?.status.error}`);
+    }
+
+    console.log('Admin transaction successful. Digest:', result.digest);
+    return { success: true, digest: result.digest };
 }

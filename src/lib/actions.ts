@@ -2,21 +2,33 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { addMember as addMemberMock, findBadge, removeDomain, updateMemberStatus, findMemberByAddress, findDomain, members, whitelistedDomains, findMemberById } from './data';
-import { registerMemberOnSui, verifyBadgeOnSui, executeAdminTransaction } from './sui';
-import type { User } from './types';
-import { MOCK_USERS } from '@/components/auth-context';
+import { addMember as addMemberMock, findBadge, removeDomain as removeDomainMock, updateMemberStatus, findMemberByAddress, findDomain, findMemberById } from './data';
+import { registerMemberOnSui, verifyBadgeOnSui, executeAdminTransaction, isDomainWhitelisted } from './sui';
+import type { ZkLoginSignature } from '@mysten/zklogin';
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Name is required'),
   program: z.string().min(2, 'Program is required'),
   studentNumber: z.string().min(1, 'Student number is required'),
   address: z.string(),
+  emailDomain: z.string(),
 });
 
-
+/**
+ * Note: This function is more complex in a real app. 
+ * We would pass the full zkLogin signature from the client.
+ * For now, we'll pass a mock signature and derive the email from the address.
+ */
 export async function registerMember(formData: FormData) {
-  const validatedFields = registerSchema.safeParse(Object.fromEntries(formData.entries()));
+  const data = Object.fromEntries(formData.entries());
+
+  // This is a temporary solution to get the user's email domain.
+  // In a real flow (Phase 7), the JWT from the client will provide this.
+  const tempUser = Object.values(MOCK_USERS).find(u => u.zkAddress === data.address);
+  if (!tempUser) return { error: 'Could not find a mock user for this address.' };
+  data.emailDomain = tempUser.email.substring(tempUser.email.indexOf('@'));
+
+  const validatedFields = registerSchema.safeParse(data);
 
   if (!validatedFields.success) {
     return { error: 'Invalid data provided.' };
@@ -26,36 +38,42 @@ export async function registerMember(formData: FormData) {
   if (existingMember) {
       return { error: 'This address is already registered.' };
   }
-  
-  // Find the logged-in user to get their email
-  const userEmail = Object.keys(MOCK_USERS).find(key => MOCK_USERS[key].zkAddress === validatedFields.data.address);
-  if (!userEmail) {
-    return { error: 'Could not identify user.' };
-  }
-  
-  const emailDomain = userEmail.substring(userEmail.indexOf('@'));
-
-  // Check if domain is whitelisted using mock data
-  const domainIsAllowed = whitelistedDomains.some(d => emailDomain.endsWith(d.domain));
-  if (!domainIsAllowed) {
-    return { error: `Your email domain (${emailDomain}) is not authorized.`}
-  }
-
 
   try {
+    const domainIsAllowed = await isDomainWhitelisted(validatedFields.data.emailDomain);
+    if (!domainIsAllowed) {
+        return { error: `Your email domain (${validatedFields.data.emailDomain}) is not authorized.`}
+    }
+
+    // In a real app, the client would provide the full ZkLoginSignature
+    const mockZkLoginSignature: ZkLoginSignature = {
+        inputs: {
+            kty: "RSA",
+            e: "AQAB",
+            n: "mock-n",
+            maxEpoch: 0,
+            addrSeed: "mock-seed",
+            iss: "mock-iss",
+        },
+        proofPoints: {
+            a: [],
+            b: [[], []],
+            c: [],
+        },
+    };
+    
     const suiData = {
       ...validatedFields.data,
-      emailDomain: emailDomain,
       organization: "Sui University" // Example organization
     };
 
-    // This is where we call the blockchain.
-    // The second argument `true` is to use the mock data for now.
-    // Change it to `false` to call your actual smart contract.
-    await registerMemberOnSui(suiData, true);
+    const result = await registerMemberOnSui(suiData, mockZkLoginSignature);
     
-    // We still call the mock data function to update the UI instantly.
-    addMemberMock(validatedFields.data);
+    // Add to our mock DB for instant UI updates.
+    addMemberMock({ 
+        ...validatedFields.data,
+        id: result.badgeId,
+    });
 
     revalidatePath('/dashboard');
     revalidatePath('/admin');
@@ -67,19 +85,19 @@ export async function registerMember(formData: FormData) {
 }
 
 export async function verifyBadge(id: string, address: string) {
-    // This action will now use the Sui function
     try {
+        // We still check local data first to see if we even know about this badge.
         const badge = findBadge(id, address);
         if (!badge) {
              return { success: false, message: 'Badge not found in local data.' };
         }
-        // Always returns true in mock mode for now
-        const { isValid } = await verifyBadgeOnSui(id, address, true);
+        
+        const { isValid } = await verifyBadgeOnSui(badge.id, badge.address);
 
         if(isValid) {
             return { success: true, member: badge };
         }
-        return { success: false, message: 'On-chain verification failed.' };
+        return { success: false, message: 'On-chain verification failed or badge is revoked.' };
 
     } catch (e: any) {
         return { success: false, message: e.message || 'Failed to verify badge.'};
@@ -89,21 +107,21 @@ export async function verifyBadge(id: string, address: string) {
 // Admin Actions
 export async function manageMembership(memberId: string, action: 'verify' | 'revoke') {
     try {
-        // Find member to get their address for the revoke call
         const member = findMemberById(memberId);
         if (!member) {
             return { error: 'Member not found.' };
         }
         
-        // This would require more logic for 'verify' in a real scenario
-        // For 'revoke' we have the member address
-        await executeAdminTransaction('revoke_membership', { memberAddress: member.address }, true);
+        // For 'revoke', we use the member's address.
+        // The 'verify' action here is a mock action to update status, as on-chain verification is a read-op.
+        if (action === 'revoke') {
+            await executeAdminTransaction('revoke_membership', { memberAddress: member.address });
+        }
         
-        // Mock data update
+        // Mock data update for instant UI feedback
         const newStatus = action === 'verify' ? 'verified' : 'revoked';
-        const updatedMember = updateMemberStatus(memberId, newStatus);
-        if (!updatedMember) throw new Error("Failed to update mock data.");
-
+        updateMemberStatus(memberId, newStatus);
+        
         revalidatePath('/admin');
         revalidatePath('/dashboard');
         return { success: `Member status updated to ${newStatus}.` };
@@ -117,11 +135,10 @@ export async function addAllowedDomain(domain: string) {
         return { error: 'Invalid domain format. Must start with @.' };
     }
     try {
-        await executeAdminTransaction('add_allowed_domain', { domain }, true);
+        await executeAdminTransaction('add_allowed_domain', { domain });
         
         // Mock data update
-        const result = addDomain(domain);
-        if (!result) return { error: 'Domain already exists in mock data.' };
+        addDomain(domain);
 
         revalidatePath('/admin');
         return { success: 'Domain added to whitelist.' };
@@ -137,10 +154,10 @@ export async function removeAllowedDomain(id: string) {
             return { error: 'Domain not found.' };
         }
 
-        await executeAdminTransaction('remove_allowed_domain', { domain: domainToRemove.domain }, true);
+        await executeAdminTransaction('remove_allowed_domain', { domain: domainToRemove.domain });
 
         // Mock data update
-        removeDomain(id);
+        removeDomainMock(id);
 
         revalidatePath('/admin');
         return { success: 'Domain removed from whitelist.' };
@@ -148,3 +165,16 @@ export async function removeAllowedDomain(id: string) {
         return { error: e.message || 'Failed to remove domain.' };
     }
 }
+
+// Dummy MOCK_USERS to find user email from address.
+// This will be removed in Phase 8 when we have a real auth context.
+const MOCK_USERS: Record<string, { email: string, zkAddress: string }> = {
+  'user@example.com': {
+    email: 'user@example.com',
+    zkAddress: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+  },
+  'admin@university.edu': {
+    email: 'admin@university.edu',
+    zkAddress: '0xabcdeffedcba0987654321fedcba0987654321fedcba0987654321fedcba0',
+  },
+};
