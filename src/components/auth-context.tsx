@@ -3,26 +3,21 @@
 import type { User } from '@/lib/types';
 import React, { createContext, useState, useEffect, useMemo, useCallback } from 'react';
 
-// Mock user data for simulation
-// This will be replaced with real zkLogin session data
-const MOCK_USERS: Record<string, User> = {
-  'user@example.com': {
-    name: 'John Doe',
-    email: 'user@example.com',
-    zkAddress: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-    isAdmin: false,
-  },
-  'admin@university.edu': {
-    name: 'Admin User',
-    email: 'admin@university.edu',
-    zkAddress: '0xabcdeffedcba0987654321fedcba0987654321fedcba0987654321fedcba0',
-    isAdmin: true,
-  },
+// This is a placeholder for a real user object once zkLogin completes.
+// In a full implementation, this might be fetched from a DB after login.
+const getMockUserFromEmail = (email: string, zkAddress: string): User => {
+    const isAdmin = email.endsWith('@university.edu'); // Example admin logic
+    return {
+        name: email.split('@')[0],
+        email: email,
+        zkAddress: zkAddress,
+        isAdmin: isAdmin,
+    };
 };
 
 type AuthContextType = {
   user: User | null;
-  login: (email: string) => void;
+  login: (email: string, zkAddress: string) => void;
   logout: () => void;
   loading: boolean;
 };
@@ -34,11 +29,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate checking for an existing session
+    // Check for an existing session
     try {
-      const storedUserEmail = localStorage.getItem('sui-org-user');
-      if (storedUserEmail && MOCK_USERS[storedUserEmail]) {
-        setUser(MOCK_USERS[storedUserEmail]);
+      const storedUser = localStorage.getItem('sui-org-user');
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
       }
     } catch (error) {
       console.error('Could not access localStorage', error);
@@ -46,16 +41,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
   }, []);
 
-  const login = useCallback((email: string) => {
-    // This function will be replaced by the zkLogin flow
-    const userToLogin = MOCK_USERS[email];
-    if (userToLogin) {
-      setUser(userToLogin);
-      try {
-        localStorage.setItem('sui-org-user', email);
-      } catch (error) {
-        console.error('Could not access localStorage', error);
-      }
+  const login = useCallback((email: string, zkAddress: string) => {
+    // This function will be called from the auth callback page.
+    const userToLogin = getMockUserFromEmail(email, zkAddress);
+    setUser(userToLogin);
+    try {
+      localStorage.setItem('sui-org-user', JSON.stringify(userToLogin));
+    } catch (error) {
+      console.error('Could not access localStorage', error);
     }
   }, []);
 
@@ -64,6 +57,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.removeItem('sui-org-user');
       // Additional session clearing logic for zkLogin will go here
+      sessionStorage.removeItem('zk-ephemeral-keypair');
+      sessionStorage.removeItem('zk-nonce');
       window.location.href = '/';
     } catch (error) {
       console.error('Could not access localStorage', error);
