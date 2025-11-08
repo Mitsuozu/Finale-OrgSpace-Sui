@@ -24,6 +24,7 @@ To get started, take a look at src/app/page.tsx.
 ## 📋 Table of Contents
 
 - [Overview](#-overview)
+- [Environment Setup](#-environment-setup)
 - [Features](#-features)
 - [Architecture](#-architecture)
 - [Installation](#-installation)
@@ -64,6 +65,41 @@ The Membership Badge Smart Contract enables organizations to issue verifiable NF
 - 🎫 **Events**: Attendee credentials
 - 💳 **Memberships**: Exclusive access control
 - 🏛️ **DAOs**: Community membership proof
+
+---
+
+## 🔧 Environment Setup
+
+Before running the application, you need to set up your environment variables. Create a file named `.env.local` in the root of your project and add the following content.
+
+You will need to get a **Google Client ID** and generate a **zkLogin Salt**.
+
+```env
+# Google OAuth (from your Google Cloud project)
+NEXT_PUBLIC_GOOGLE_CLIENT_ID="your-google-client-id.apps.googleusercontent.com"
+
+# zkLogin Configuration (generate a random salt)
+# You can generate one with: node -e "console.log(require('crypto').randomBytes(16).toString('hex'))"
+NEXT_PUBLIC_ZKLOGIN_SALT="your_random_salt_here"
+
+# Sui Network Configuration
+NEXT_PUBLIC_REDIRECT_URI="http://localhost:9002/auth/callback"
+NEXT_PUBLIC_SUI_NETWORK="testnet"
+
+# Sui Smart Contract Details (from your deployment)
+NEXT_PUBLIC_PACKAGE_ID="0x647474de5fd49990644a5bc3cb8ae1792ebb489ba85a42d848812fe91c433967"
+NEXT_PUBLIC_ADMIN_CAP_ID="0x25f76f11e9c3ccf1bd7cf5daf3ae01dd936a7c1fd6388cbfcd13dc25c0c15bb0"
+NEXT_PUBLIC_REGISTRY_ID="0x1aff4634dc9178e151cfc4181edcb9654c78ef3fc5816e9cbd74c80de663046d"
+
+# Admin Wallet for server-side transactions (store this securely!)
+# This should be the Base64 representation of your admin keypair's secret key.
+SERVER_PRIVATE_KEY="your_admin_private_key_in_base64"
+
+# zkLogin Prover Service URL
+ZKLOGIN_PROVER_URL="https://prover-dev.mystenlabs.com/v1"
+```
+
+**IMPORTANT**: Add `.env.local` to your `.gitignore` file to ensure you don't commit secrets.
 
 ---
 
