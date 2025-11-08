@@ -177,14 +177,14 @@ export async function executeAdminTransaction(
             target = `${PACKAGE_ID}::${MODULE_NAME}::add_allowed_domain`;
             args.push(tx.object(ADMIN_CAP_ID));
             args.push(tx.object(REGISTRY_ID));
-            args.push(tx.pure(payload.domain, 'vector<u8>'));
+            args.push(tx.pure(payload.domain));
             break;
         case 'remove_allowed_domain':
             if (!payload.domain) throw new Error('Domain is required for remove_allowed_domain');
             target = `${PACKAGE_ID}::${MODULE_NAME}::remove_allowed_domain`;
             args.push(tx.object(ADMIN_CAP_ID));
             args.push(tx.object(REGISTRY_ID));
-            args.push(tx.pure(payload.domain, 'vector<u8>'));
+            args.push(tx.pure(payload.domain));
             break;
         case 'revoke_membership':
             if (!payload.memberAddress) throw new Error('Member address is required for revoke_membership');
