@@ -18,10 +18,25 @@ const serverKeypair = () => {
         return new Ed25519Keypair();
     }
     const privateKey = process.env.SERVER_PRIVATE_KEY;
+    let privateKeyBytes: Uint8Array;
+
+    try {
+        if (privateKey.startsWith('0x')) {
+            privateKeyBytes = Buffer.from(privateKey.slice(2), 'hex');
+        } else {
+            privateKeyBytes = Buffer.from(privateKey, 'base64');
+        }
+    } catch (error) {
+        throw new Error('Failed to decode SERVER_PRIVATE_KEY. Please ensure it is a valid Base64 or Hex string.');
+    }
+
     // The key from the CLI might be 33 bytes, with the first byte being a flag.
-    // We need to slice it to get the actual 32-byte secret key.
-    const privateKeyBytes = Buffer.from(privateKey, 'base64');
+    // Or it might be 32 bytes already. We ensure we take the last 32 bytes.
     const secretKey = privateKeyBytes.slice(privateKeyBytes.length - 32);
+
+    if (secretKey.length !== 32) {
+        throw new Error(`Invalid private key length after decoding. Expected 32 bytes, got ${secretKey.length}. Please check your SERVER_PRIVATE_KEY.`);
+    }
 
     return Ed25519Keypair.fromSecretKey(secretKey);
 };
@@ -162,21 +177,21 @@ export async function executeAdminTransaction(
             target = `${PACKAGE_ID}::${MODULE_NAME}::add_allowed_domain`;
             args.push(tx.object(ADMIN_CAP_ID));
             args.push(tx.object(REGISTRY_ID));
-            args.push(tx.pure(payload.domain));
+            args.push(tx.pure(payload.domain, 'vector<u8>'));
             break;
         case 'remove_allowed_domain':
             if (!payload.domain) throw new Error('Domain is required for remove_allowed_domain');
             target = `${PACKAGE_ID}::${MODULE_NAME}::remove_allowed_domain`;
             args.push(tx.object(ADMIN_CAP_ID));
             args.push(tx.object(REGISTRY_ID));
-            args.push(tx.pure(payload.domain));
+            args.push(tx.pure(payload.domain, 'vector<u8>'));
             break;
         case 'revoke_membership':
             if (!payload.memberAddress) throw new Error('Member address is required for revoke_membership');
             target = `${PACKAGE_ID}::${MODULE_NAME}::revoke_membership`;
             args.push(tx.object(ADMIN_CAP_ID));
             args.push(tx.object(REGISTRY_ID));
-            args.push(tx.pure(payload.memberAddress));
+            args.push(tx.pure(payload.memberAddress, 'address'));
             break;
         default:
             throw new Error('Invalid admin action.');
