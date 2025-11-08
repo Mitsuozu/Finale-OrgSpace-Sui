@@ -30,21 +30,29 @@ export async function zkLogin(provider: OpenIDProvider) {
     const nonce = 'mock-nonce-from-somewhere-random';
     console.log('Generated nonce:', nonce);
     
-    // In a real app, we would store these values and then redirect.
-    // For now, this function is a placeholder.
-    alert('zkLogin flow initiated! Check the console. We will implement the redirect next.');
+    // Save the nonce and ephemeral keypair to session storage
+    // In a real app, you'd use more secure storage
+    sessionStorage.setItem('zk-ephemeral-keypair', ephemeralKeyPair.export().privateKey);
+    sessionStorage.setItem('zk-nonce', nonce);
 
-    // The next step (Phase 4) will be to handle the redirect and callback.
-    // For example:
-    // const params = new URLSearchParams({
-    //   client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
-    //   redirect_uri: REDIRECT_URI,
-    //   response_type: 'id_token',
-    //   scope: 'openid email profile',
-    //   nonce: nonce,
-    // });
-    // const loginURL = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
-    // window.location.replace(loginURL);
+    // The next step is to redirect to the OAuth provider
+    const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!GOOGLE_CLIENT_ID) {
+        alert("NEXT_PUBLIC_GOOGLE_CLIENT_ID is not set. Please check your .env.local file.");
+        return;
+    }
+
+    const params = new URLSearchParams({
+      client_id: GOOGLE_CLIENT_ID,
+      redirect_uri: REDIRECT_URI,
+      response_type: 'id_token',
+      scope: 'openid email profile',
+      nonce: nonce,
+    });
+    const loginURL = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+    
+    // Redirect the user
+    window.location.replace(loginURL);
 }
 
 // Other functions from your plan will be implemented in subsequent steps:

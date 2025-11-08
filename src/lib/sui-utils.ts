@@ -16,5 +16,5 @@ export const MODULE_NAME = 'membership_badge';
 // This will be used in the OAuth flow
 export const REDIRECT_URI =
   typeof window !== 'undefined'
-    ? `${window.location.origin}/dashboard`
-    : 'http://localhost:9002/dashboard';
+    ? `${window.location.origin}/auth/callback`
+    : 'http://localhost:9002/auth/callback';
