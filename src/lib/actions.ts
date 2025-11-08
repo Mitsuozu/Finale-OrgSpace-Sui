@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { addMember as addMemberMock, findBadge, removeDomain as removeDomainMock, updateMemberStatus, findMemberByAddress, findDomain, findMemberById } from './data';
+import { addMember as addMemberMock, findBadge, removeDomain as removeDomainMock, updateMemberStatus, findMemberByAddress, findDomain, findMemberById, addDomain as addDomainMock } from './data';
 import { registerMemberOnSui, verifyBadgeOnSui, executeAdminTransaction, isDomainWhitelisted } from './sui';
 import type { ZkLoginSignature } from '@mysten/zklogin';
 
@@ -23,7 +23,7 @@ export async function registerMember(formData: FormData) {
   const data = Object.fromEntries(formData.entries());
 
   // This is a temporary solution to get the user's email domain.
-  // In a real flow (Phase 7), the JWT from the client will provide this.
+  // In a real flow (Phase 8), the JWT from the client will provide this.
   const tempUser = Object.values(MOCK_USERS).find(u => u.zkAddress === data.address);
   if (!tempUser) return { error: 'Could not find a mock user for this address.' };
   data.emailDomain = tempUser.email.substring(tempUser.email.indexOf('@'));
@@ -138,7 +138,7 @@ export async function addAllowedDomain(domain: string) {
         await executeAdminTransaction('add_allowed_domain', { domain });
         
         // Mock data update
-        addDomain(domain);
+        addDomainMock(domain);
 
         revalidatePath('/admin');
         return { success: 'Domain added to whitelist.' };
