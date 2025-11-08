@@ -10,8 +10,8 @@ import type { Member } from './types';
 // TODO: Replace with your deployed package and object IDs from your `sui client publish` output.
 // These are placeholders from the README.md
 const PACKAGE_ID = '0x647474de5fd49990644a5bc3cb8ae1792ebb489ba85a42d848812fe91c433967'; 
-const ADMIN_CAP_ID = '0x456def...';
-const REGISTRY_ID = '0x789ghi...';
+const ADMIN_CAP_ID = '0x25f76f11e9c3ccf1bd7cf5daf3ae01dd936a7c1fd6388cbfcd13dc25c0c15bb0';
+const REGISTRY_ID = '0x1aff4634dc9178e151cfc4181edcb9654c78ef3fc5816e9cbd74c80de663046d';
 
 
 const MODULE_NAME = 'membership_badge';
