@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/hooks/use-auth';
+import { jwtDecode } from 'jose';
 
 export default function AuthCallbackPage() {
     const router = useRouter();
@@ -14,26 +15,38 @@ export default function AuthCallbackPage() {
         const id_token = searchParams.get('id_token');
         console.log("Handling OAuth callback...");
 
-        // In a real app, we would exchange this token for a zkLogin proof
-        // and get the user's zkAddress.
-        // For now, we will simulate this by logging in a mock user.
+        if (id_token) {
+            try {
+                // Decode the JWT to get user info.
+                // NOTE: In a real production app, you would also verify the token's signature.
+                // For this project, we'll trust the token from Google's redirect.
+                const decodedToken: { email: string, sub: string } = jwtDecode(id_token);
+                const userEmail = decodedToken.email;
+                
+                // This is a placeholder for the real zkAddress, which would be derived
+                // from the JWT's `sub` claim and the user's salt.
+                // For now, we'll create a mock address from the user's unique google ID (`sub`)
+                // to ensure it's unique.
+                const mockZkAddress = `0x${decodedToken.sub.substring(0, 62)}`;
 
-        // This is a placeholder. We will replace this logic in the next steps.
-        // The id_token would be parsed to get the user's email.
-        // For example, if JWT contains 'user@example.com' or 'admin@university.edu'
-        // For this mock, let's just log in the default admin user to show it works.
-        const mockUserEmail = 'admin@university.edu'; 
-        
-        console.log("Simulating login for:", mockUserEmail);
-        login(mockUserEmail);
+                console.log("Simulating login for:", userEmail);
+                login(userEmail, mockZkAddress);
 
-        // Simulate proof generation time and then redirect
-        const timer = setTimeout(() => {
-            console.log("Redirecting to dashboard...");
-            router.push('/dashboard');
-        }, 3000); // 3-second delay
+                // Simulate proof generation time and then redirect
+                const timer = setTimeout(() => {
+                    console.log("Redirecting to dashboard...");
+                    router.push('/dashboard');
+                }, 3000); // 3-second delay
 
-        return () => clearTimeout(timer);
+                return () => clearTimeout(timer);
+            } catch (error) {
+                console.error("Failed to decode JWT:", error);
+                router.push('/');
+            }
+        } else {
+             console.error("No id_token found in callback URL");
+             router.push('/');
+        }
     }, [searchParams, router, login]);
 
     return (

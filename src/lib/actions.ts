@@ -17,16 +17,21 @@ const registerSchema = z.object({
 /**
  * Note: This function is more complex in a real app. 
  * We would pass the full zkLogin signature from the client.
- * For now, we'll pass a mock signature and derive the email from the address.
+ * For now, we'll pass a mock signature and derive the email from the user object.
  */
 export async function registerMember(formData: FormData) {
   const data = Object.fromEntries(formData.entries());
 
-  // This is a temporary solution to get the user's email domain.
-  // In a real flow (Phase 8), the JWT from the client will provide this.
-  const tempUser = Object.values(MOCK_USERS).find(u => u.zkAddress === data.address);
-  if (!tempUser) return { error: 'Could not find a mock user for this address.' };
-  data.emailDomain = tempUser.email.substring(tempUser.email.indexOf('@'));
+  // The user object is now stored in localStorage and passed to the form,
+  // which includes the email. The auth context handles getting this.
+  // We need to derive the email domain from the user's email.
+  const userJson = formData.get('user') as string;
+  if (!userJson) {
+      return { error: 'User data is missing.' };
+  }
+  const user = JSON.parse(userJson);
+  data.emailDomain = user.email.substring(user.email.indexOf('@'));
+
 
   const validatedFields = registerSchema.safeParse(data);
 
@@ -165,16 +170,3 @@ export async function removeAllowedDomain(id: string) {
         return { error: e.message || 'Failed to remove domain.' };
     }
 }
-
-// Dummy MOCK_USERS to find user email from address.
-// This will be removed in Phase 8 when we have a real auth context.
-const MOCK_USERS: Record<string, { email: string, zkAddress: string }> = {
-  'user@example.com': {
-    email: 'user@example.com',
-    zkAddress: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-  },
-  'admin@university.edu': {
-    email: 'admin@university.edu',
-    zkAddress: '0xabcdeffedcba0987654321fedcba0987654321fedcba0987654321fedcba0',
-  },
-};

@@ -40,8 +40,9 @@ export default function RegistrationForm({ user }: { user: User }) {
     formData.append('name', data.name);
     formData.append('program', data.program);
     formData.append('studentNumber', data.studentNumber);
-    // The user's zkAddress is now passed from the user object
     formData.append('address', user.zkAddress);
+    // Pass the whole user object to the server action
+    formData.append('user', JSON.stringify(user));
 
     const result = await registerMember(formData);
 
