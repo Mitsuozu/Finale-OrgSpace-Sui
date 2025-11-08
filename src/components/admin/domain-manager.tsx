@@ -57,13 +57,13 @@ export default function DomainManager({ initialDomains }: { initialDomains: Whit
       <CardContent className="space-y-4">
         <div className="flex gap-2">
           <Input 
-            placeholder="e.g., university.edu" 
+            placeholder="e.g., @university.edu" 
             value={newDomain}
             onChange={(e) => setNewDomain(e.target.value)}
             disabled={isPending}
             onKeyDown={(e) => e.key === 'Enter' && handleAddDomain()}
           />
-          <Button onClick={handleAddDomain} disabled={isPending || !newDomain}>
+          <Button onClick={handleAddDomain} disabled={isPending || !newDomain.startsWith('@')}>
             {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4 sm:mr-2" />}
             <span className="hidden sm:inline">Add Domain</span>
           </Button>

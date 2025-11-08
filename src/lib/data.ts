@@ -29,8 +29,8 @@ export let members: Member[] = [
 ];
 
 export let whitelistedDomains: WhitelistedDomain[] = [
-  { id: 'domain-1', domain: 'university.edu' },
-  { id: 'domain-2', domain: 'gradschool.university.edu' },
+  { id: 'domain-1', domain: '@university.edu' },
+  { id: 'domain-2', domain: '@gradschool.university.edu' },
 ];
 
 // In-memory data mutation functions (for server actions to use)
@@ -76,6 +76,14 @@ export const findMemberByAddress = (address: string) => {
     return members.find(m => m.address === address) || null;
 }
 
+export const findMemberById = (id: string) => {
+    return members.find(m => m.id === id) || null;
+}
+
 export const findBadge = (id: string, address: string) => {
     return members.find(m => m.id.toLowerCase() === id.toLowerCase() && m.address.toLowerCase() === address.toLowerCase()) || null;
+}
+
+export const findDomain = (id: string) => {
+    return whitelistedDomains.find(d => d.id === id) || null;
 }
