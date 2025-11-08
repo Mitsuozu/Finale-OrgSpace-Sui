@@ -9,7 +9,7 @@ import type { Member } from './types';
 
 // TODO: Replace with your deployed package and object IDs from your `sui client publish` output.
 // These are placeholders from the README.md
-const PACKAGE_ID = '0x123abc...'; 
+const PACKAGE_ID = '0x647474de5fd49990644a5bc3cb8ae1792ebb489ba85a42d848812fe91c433967'; 
 const ADMIN_CAP_ID = '0x456def...';
 const REGISTRY_ID = '0x789ghi...';
 
