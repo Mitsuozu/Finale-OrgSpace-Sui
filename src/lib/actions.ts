@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { addDomain, addMember, findBadge, removeDomain, updateMemberStatus, findMemberByAddress } from './data';
+import { addDomain, addMember as addMemberMock, findBadge, removeDomain, updateMemberStatus, findMemberByAddress } from './data';
+import { registerMemberOnSui } from './sui';
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Name is required'),
@@ -17,23 +18,34 @@ export async function registerMember(formData: FormData) {
   if (!validatedFields.success) {
     return { error: 'Invalid data provided.' };
   }
-
+  
+  // This check can be removed if your smart contract handles it
   const existingMember = findMemberByAddress(validatedFields.data.address);
   if (existingMember) {
       return { error: 'This address is already registered.' };
   }
 
   try {
-    addMember(validatedFields.data);
+    // This is where we call the blockchain.
+    // The second argument `true` is to use the mock data for now.
+    // Change it to `false` to call your actual smart contract.
+    await registerMemberOnSui(validatedFields.data, true);
+    
+    // We still call the mock data function to update the UI instantly.
+    // In a real app, you might want to fetch the new state from the blockchain.
+    addMemberMock(validatedFields.data);
+
     revalidatePath('/dashboard');
     revalidatePath('/admin');
     return { success: 'Registration submitted successfully! Please wait for admin verification.' };
-  } catch (e) {
-    return { error: 'Failed to register member.' };
+  } catch (e: any) {
+    console.error(e);
+    return { error: e.message || 'Failed to register member on-chain.' };
   }
 }
 
 export async function verifyBadge(id: string, address: string) {
+    // TODO: Replace with smart contract call
     const badge = findBadge(id, address);
     if(badge && badge.status === 'verified') {
         return { success: true, member: badge };
@@ -43,6 +55,7 @@ export async function verifyBadge(id: string, address: string) {
 
 // Admin Actions
 export async function manageMembership(id: string, action: 'verify' | 'revoke') {
+    // TODO: Replace with smart contract call
     try {
         const newStatus = action === 'verify' ? 'verified' : 'revoked';
         const updatedMember = updateMemberStatus(id, newStatus);
