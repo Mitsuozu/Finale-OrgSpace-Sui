@@ -1,84 +1,106 @@
-import Image from 'next/image';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, Users, ShieldCheck } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { CheckCircle, Users, ShieldCheck, ArrowRight } from 'lucide-react';
 import PublicBadgeChecker from '@/components/public/badge-checker';
-import { getPlaceholderImage } from '@/lib/placeholder-images';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 export default function Home() {
-  const heroImage = getPlaceholderImage('hero-background');
-
   return (
     <div className="flex flex-col">
-      <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48">
-        <div className="container px-4 md:px-6">
-          <div className="grid gap-6 lg:grid-cols-[1fr_400px] lg:gap-12 xl:grid-cols-[1fr_600px]">
-            <div className="flex flex-col justify-center space-y-4">
-              <div className="space-y-2">
-                <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none font-headline">
-                  Decentralized Identity for Your Organization
-                </h1>
-                <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                  SuiOrg leverages zkLogin on the Sui blockchain to provide secure, verifiable, and private membership credentials for your university or organization.
-                </p>
-              </div>
-            </div>
-            {heroImage && (
-              <Image
-                src={heroImage.imageUrl}
-                width={600}
-                height={400}
-                alt={heroImage.description}
-                data-ai-hint={heroImage.imageHint}
-                className="mx-auto aspect-video overflow-hidden rounded-xl object-cover sm:w-full lg:order-last lg:aspect-square"
-              />
-            )}
-          </div>
-        </div>
-      </section>
-
-      <section className="w-full py-12 md:py-24 lg:py-32 bg-card">
-        <div className="container px-4 md:px-6">
-          <div className="flex flex-col items-center justify-center space-y-4 text-center">
-            <div className="space-y-2">
-              <div className="inline-block rounded-lg bg-secondary px-3 py-1 text-sm">Key Features</div>
-              <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">Why SuiOrg?</h2>
-              <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                Empower your members with self-sovereign identity while simplifying administrative overhead.
-              </p>
-            </div>
-          </div>
-          <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-2 md:gap-12 lg:grid-cols-3 lg:max-w-none mt-12">
-            <div className="grid gap-2 text-center p-4 rounded-lg hover:bg-background transition-colors">
-              <CheckCircle className="h-10 w-10 mx-auto text-primary" />
-              <h3 className="text-lg font-bold">zkLogin Integration</h3>
-              <p className="text-sm text-muted-foreground">Seamless and secure onboarding using existing Google accounts. No need for new passwords or seed phrases.</p>
-            </div>
-            <div className="grid gap-2 text-center p-4 rounded-lg hover:bg-background transition-colors">
-              <Users className="h-10 w-10 mx-auto text-primary" />
-              <h3 className="text-lg font-bold">Verifiable Credentials</h3>
-              <p className="text-sm text-muted-foreground">Issue tamper-proof digital membership badges on the Sui blockchain that can be verified by anyone, anywhere.</p>
-            </div>
-            <div className="grid gap-2 text-center p-4 rounded-lg hover:bg-background transition-colors">
-              <ShieldCheck className="h-10 w-10 mx-auto text-primary" />
-              <h3 className="text-lg font-bold">Admin Control</h3>
-              <p className="text-sm text-muted-foreground">Manage members and control access with a secure admin dashboard, protected by zkLogin.</p>
+      {/* Hero Section */}
+      <section className="w-full py-20 md:py-32 lg:py-40 bg-gradient-to-br from-background to-secondary/50">
+        <div className="container px-4 md:px-6 text-center">
+          <div className="flex flex-col items-center space-y-6">
+            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl/none font-headline bg-clip-text text-transparent bg-gradient-to-r from-primary via-accent to-primary">
+              Decentralized Identity for Your Organization
+            </h1>
+            <p className="max-w-[700px] mx-auto text-muted-foreground text-lg md:text-xl">
+              SuiOrg leverages zkLogin on the Sui blockchain to provide secure, verifiable, and private membership credentials for your university or organization.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4">
+               <Button asChild size="lg">
+                <Link href="/dashboard">
+                  Get Started <ArrowRight className="ml-2" />
+                </Link>
+              </Button>
+               <Button asChild variant="secondary" size="lg">
+                <Link href="/#check-badge">
+                  Verify a Badge
+                </Link>
+              </Button>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="check-badge" className="w-full py-12 md:py-24 lg:py-32">
-        <div className="container grid items-center justify-center gap-4 px-4 text-center md:px-6">
-          <div className="space-y-3">
-            <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight font-headline">
-              Public Badge Verification
-            </h2>
-            <p className="mx-auto max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-              Publicly verify the authenticity of a SuiOrg membership badge using its on-chain identifiers.
+      {/* Features Section */}
+      <section className="w-full py-16 md:py-24 lg:py-32 bg-background">
+        <div className="container px-4 md:px-6">
+          <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
+            <div className="inline-block rounded-lg bg-secondary px-3 py-1 text-sm font-semibold tracking-wider uppercase">Key Features</div>
+            <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">Why SuiOrg?</h2>
+            <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+              Empower your members with self-sovereign identity while simplifying administrative overhead.
             </p>
           </div>
-          <div className="mx-auto w-full max-w-md space-y-2 mt-6">
-            <PublicBadgeChecker />
+          <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-2 lg:grid-cols-3 lg:max-w-none">
+            <Card className="hover:border-primary/50 hover:shadow-lg transition-all duration-300">
+              <CardContent className="p-6 text-center">
+                <div className="flex justify-center mb-4">
+                    <div className="p-4 rounded-full bg-primary/10 text-primary">
+                        <CheckCircle className="h-8 w-8" />
+                    </div>
+                </div>
+                <h3 className="text-xl font-bold mb-2">zkLogin Integration</h3>
+                <p className="text-sm text-muted-foreground">Seamless and secure onboarding using existing Google accounts. No need for new passwords or seed phrases.</p>
+              </CardContent>
+            </Card>
+            <Card className="hover:border-primary/50 hover:shadow-lg transition-all duration-300">
+              <CardContent className="p-6 text-center">
+                <div className="flex justify-center mb-4">
+                    <div className="p-4 rounded-full bg-primary/10 text-primary">
+                        <Users className="h-8 w-8" />
+                    </div>
+                </div>
+                <h3 className="text-xl font-bold mb-2">Verifiable Credentials</h3>
+                <p className="text-sm text-muted-foreground">Issue tamper-proof digital membership badges on the Sui blockchain that can be verified by anyone, anywhere.</p>
+              </CardContent>
+            </Card>
+            <Card className="hover:border-primary/50 hover:shadow-lg transition-all duration-300">
+              <CardContent className="p-6 text-center">
+                <div className="flex justify-center mb-4">
+                    <div className="p-4 rounded-full bg-primary/10 text-primary">
+                        <ShieldCheck className="h-8 w-8" />
+                    </div>
+                </div>
+                <h3 className="text-xl font-bold mb-2">Admin Control</h3>
+                <p className="text-sm text-muted-foreground">Manage members and control access with a secure admin dashboard, protected by zkLogin.</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Badge Checker Section */}
+      <section id="check-badge" className="w-full py-16 md:py-24 lg:py-32 bg-secondary/30">
+        <div className="container">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="space-y-4">
+                <div className="inline-block rounded-lg bg-primary px-3 py-1 text-sm font-semibold text-primary-foreground tracking-wider uppercase">Verification</div>
+                <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight font-headline">
+                    Public Badge Verification
+                </h2>
+                <p className="text-muted-foreground md:text-lg/relaxed">
+                    Publicly verify the authenticity of a SuiOrg membership badge using its on-chain identifiers. Enter the badge ID and zkLogin address to confirm its status.
+                </p>
+            </div>
+            <div className="w-full">
+                <Card>
+                    <CardContent className="p-6">
+                         <PublicBadgeChecker />
+                    </CardContent>
+                </Card>
+            </div>
           </div>
         </div>
       </section>
