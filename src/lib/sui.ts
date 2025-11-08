@@ -18,13 +18,10 @@ const serverKeypair = () => {
         return new Ed25519Keypair();
     }
     const privateKey = process.env.SERVER_PRIVATE_KEY;
-    // Ensure the key is 32 bytes
-    const privateKeyBytes = Buffer.from(privateKey, 'base64');
     // The key from the CLI might be 33 bytes, with the first byte being a flag.
     // We need to slice it to get the actual 32-byte secret key.
-    const secretKey = privateKeyBytes.length === 33 && privateKeyBytes[0] === 0 
-        ? privateKeyBytes.slice(1)
-        : privateKeyBytes;
+    const privateKeyBytes = Buffer.from(privateKey, 'base64');
+    const secretKey = privateKeyBytes.slice(privateKeyBytes.length - 32);
 
     return Ed25519Keypair.fromSecretKey(secretKey);
 };
@@ -157,22 +154,28 @@ export async function executeAdminTransaction(
     const tx = new TransactionBlock();
     
     let target: `${string}::${string}::${string}`;
-    const args: any[] = [tx.object(ADMIN_CAP_ID), tx.object(REGISTRY_ID)];
+    const args: any[] = [];
 
     switch (action) {
         case 'add_allowed_domain':
             if (!payload.domain) throw new Error('Domain is required for add_allowed_domain');
             target = `${PACKAGE_ID}::${MODULE_NAME}::add_allowed_domain`;
+            args.push(tx.object(ADMIN_CAP_ID));
+            args.push(tx.object(REGISTRY_ID));
             args.push(tx.pure(payload.domain));
             break;
         case 'remove_allowed_domain':
             if (!payload.domain) throw new Error('Domain is required for remove_allowed_domain');
             target = `${PACKAGE_ID}::${MODULE_NAME}::remove_allowed_domain`;
+            args.push(tx.object(ADMIN_CAP_ID));
+            args.push(tx.object(REGISTRY_ID));
             args.push(tx.pure(payload.domain));
             break;
         case 'revoke_membership':
             if (!payload.memberAddress) throw new Error('Member address is required for revoke_membership');
             target = `${PACKAGE_ID}::${MODULE_NAME}::revoke_membership`;
+            args.push(tx.object(ADMIN_CAP_ID));
+            args.push(tx.object(REGISTRY_ID));
             args.push(tx.pure(payload.memberAddress));
             break;
         default:
