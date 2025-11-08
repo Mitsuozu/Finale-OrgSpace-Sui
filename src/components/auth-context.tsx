@@ -4,6 +4,7 @@ import type { User } from '@/lib/types';
 import React, { createContext, useState, useEffect, useMemo, useCallback } from 'react';
 
 // Mock user data for simulation
+// This will be replaced with real zkLogin session data
 const MOCK_USERS: Record<string, User> = {
   'user@example.com': {
     name: 'John Doe',
@@ -46,6 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = useCallback((email: string) => {
+    // This function will be replaced by the zkLogin flow
     const userToLogin = MOCK_USERS[email];
     if (userToLogin) {
       setUser(userToLogin);
@@ -61,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     try {
       localStorage.removeItem('sui-org-user');
-      // Redirect to home page on logout for a better UX
+      // Additional session clearing logic for zkLogin will go here
       window.location.href = '/';
     } catch (error) {
       console.error('Could not access localStorage', error);

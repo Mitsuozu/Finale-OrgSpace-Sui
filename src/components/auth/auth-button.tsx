@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/lib/hooks/use-auth';
 import { Button } from '@/components/ui/button';
-import { LogIn, LogOut, User as UserIcon, Shield, Loader2 } from 'lucide-react';
+import { LogOut, User as UserIcon, Shield, Loader2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,26 +13,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { useState } from 'react';
+import ZkLoginButton from './zk-login-button';
 
 export default function AuthButton() {
-  const { user, login, logout, loading } = useAuth();
-  const [dialogOpen, setDialogOpen] = useState(false);
-
-  const handleLogin = (email: string) => {
-    login(email);
-    setDialogOpen(false);
-  };
+  const { user, logout, loading } = useAuth();
 
   if (loading) {
     return <Button variant="outline" size="sm" disabled><Loader2 className="mr-2 h-4 w-4 animate-spin" />Loading...</Button>;
@@ -75,32 +59,5 @@ export default function AuthButton() {
     );
   }
 
-  return (
-    <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
-      <AlertDialogTrigger asChild>
-        <Button size="sm">
-          <LogIn className="mr-2 h-4 w-4" /> Connect
-        </Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Connect with zkLogin</AlertDialogTitle>
-          <AlertDialogDescription>
-            This is a simulation. Select a mock user to login with Google OAuth. In a real application, this would redirect you to Google.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <div className="grid gap-4 py-4">
-          <Button onClick={() => handleLogin('user@example.com')}>
-            <UserIcon className="mr-2 h-4 w-4"/> Login as Member (user@example.com)
-          </Button>
-          <Button variant="secondary" onClick={() => handleLogin('admin@university.edu')}>
-            <Shield className="mr-2 h-4 w-4"/> Login as Admin (admin@university.edu)
-          </Button>
-        </div>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
+  return <ZkLoginButton />;
 }
