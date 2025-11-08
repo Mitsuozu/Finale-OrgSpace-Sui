@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, CheckCircle, Clock, XCircle, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { verifyBadge } from "@/lib/actions";
 
 export default function DashboardPage() {
     const { user, loading: authLoading } = useAuth();
@@ -35,28 +36,29 @@ export default function DashboardPage() {
         }
     }, [user, authLoading, router, currentMemberInfo]);
 
-    const handleVerifyBadge = () => {
+    const handleVerifyBadge = async () => {
+        if (!memberInfo) return;
         setIsVerifying(true);
         toast({
             title: "Verifying Badge...",
             description: "Please wait while we confirm your badge on-chain.",
         });
-        // Simulate a delay for blockchain interaction
-        setTimeout(() => {
-            if (memberInfo?.status === 'verified') {
-                 toast({
-                    title: "Badge Verified!",
-                    description: "Your membership badge is authentic and active.",
-                });
-            } else {
-                 toast({
-                    variant: "destructive",
-                    title: "Verification Failed",
-                    description: "Your badge is not verified yet. Please contact an admin.",
-                });
-            }
-            setIsVerifying(false);
-        }, 2000);
+
+        const result = await verifyBadge(memberInfo.id, memberInfo.address);
+
+        if (result.success) {
+            toast({
+                title: "Badge Verified!",
+                description: "Your membership badge is authentic and active.",
+            });
+        } else {
+            toast({
+                variant: "destructive",
+                title: "Verification Failed",
+                description: result.message || "Your badge could not be verified on-chain.",
+            });
+        }
+        setIsVerifying(false);
     };
 
     if (authLoading || memberInfo === undefined) {
