@@ -18,8 +18,15 @@ const serverKeypair = () => {
         return new Ed25519Keypair();
     }
     const privateKey = process.env.SERVER_PRIVATE_KEY;
+    // Ensure the key is 32 bytes
     const privateKeyBytes = Buffer.from(privateKey, 'base64');
-    return Ed25519Keypair.fromSecretKey(privateKeyBytes.slice(privateKeyBytes[0] === 0 ? 1 : 0));
+    // The key from the CLI might be 33 bytes, with the first byte being a flag.
+    // We need to slice it to get the actual 32-byte secret key.
+    const secretKey = privateKeyBytes.length === 33 && privateKeyBytes[0] === 0 
+        ? privateKeyBytes.slice(1)
+        : privateKeyBytes;
+
+    return Ed25519Keypair.fromSecretKey(secretKey);
 };
 
 type RegistrationData = Omit<Member, 'id' | 'status'> & {emailDomain: string, organization: string};
