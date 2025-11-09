@@ -21,16 +21,15 @@ const getServerKeypair = () => {
     }
 
     try {
-        // The private key from `sui.keystore` is a Base64 string that decodes to a 33-byte array.
-        // The first byte is the scheme flag (0 for Ed25519), and the next 32 bytes are the secret key.
         const decoded = Buffer.from(privateKey, 'base64');
         
-        if (decoded.length !== 33) {
-            throw new Error(`Invalid private key length after decoding. Expected 33 bytes, but got ${decoded.length}. Please ensure you have the correct Base64 private key from your sui.keystore file.`);
+        // The secret key for Ed25519 is the last 32 bytes of the decoded buffer.
+        // This is robust against different key formats (e.g., with or without the scheme flag).
+        if (decoded.length < 32) {
+             throw new Error(`Invalid private key length after decoding. Expected at least 32 bytes, but got ${decoded.length}.`);
         }
-
-        // We need to slice off the first byte (the scheme flag) to get the 32-byte secret key.
-        const secretKey = decoded.slice(1);
+        
+        const secretKey = decoded.slice(-32);
         return Ed25519Keypair.fromSecretKey(secretKey);
 
     } catch (error: any) {
