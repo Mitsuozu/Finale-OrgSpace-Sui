@@ -12,7 +12,7 @@ import type { ZkLoginSignature } from '@mysten/zklogin';
 // This is the server's keypair for signing transactions.
 // IMPORTANT: In a production environment, this private key must be stored
 // securely (e.g., in a secret manager) and not hardcoded.
-const serverKeypair = () => {
+const getServerKeypair = () => {
     if (!process.env.SERVER_PRIVATE_KEY) {
         console.warn("SERVER_PRIVATE_KEY not set, using a mock keypair. Do not use in production.");
         return new Ed25519Keypair();
@@ -165,7 +165,7 @@ export async function executeAdminTransaction(
     action: 'add_allowed_domain' | 'remove_allowed_domain' | 'revoke_membership',
     payload: { domain?: string; memberAddress?: string }
 ) {
-    const keypair = serverKeypair(); // Admin's keypair
+    const keypair = getServerKeypair(); // Admin's keypair
     const adminAddress = keypair.getPublicKey().toSuiAddress();
     console.log(`🔑 Admin Address: ${adminAddress}. Please ensure this address has SUI for gas.`);
 
