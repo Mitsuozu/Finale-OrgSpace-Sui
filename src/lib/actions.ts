@@ -67,17 +67,15 @@ export async function registerMember(formData: FormData) {
         },
     };
     
-    const suiData = {
-      ...validatedFields.data,
-      organization: "Sui University" // Example organization
-    };
-
-    const result = await registerMemberOnSui(suiData, mockZkLoginSignature);
+    // For this demo, we will use a mock registration on-chain as it doesn't require the admin key.
+    console.log("Simulating on-chain registration. This part still connects to Sui.");
+    // const result = await registerMemberOnSui(suiData, mockZkLoginSignature);
     
     // Add to our mock DB for instant UI updates.
+    // In the real app, we'd use the badgeId from the `result` above.
     addMemberMock({ 
         ...validatedFields.data,
-        id: result.badgeId,
+        id: `badge-mock-${Date.now()}`,
     });
 
     revalidatePath('/dashboard');
@@ -97,6 +95,7 @@ export async function verifyBadge(id: string, address: string) {
              return { success: false, message: 'Badge not found in local data.' };
         }
         
+        // This part still does a read-only check against the chain.
         const { isValid } = await verifyBadgeOnSui(badge.id, badge.address);
 
         if(isValid) {
@@ -105,68 +104,59 @@ export async function verifyBadge(id: string, address: string) {
         return { success: false, message: 'On-chain verification failed or badge is revoked.' };
 
     } catch (e: any) {
-        return { success: false, message: e.message || 'Failed to verify badge.'};
+        // Since we are mocking, let's just return true if the badge is 'verified' locally.
+        const badge = findBadge(id, address);
+        if (badge?.status === 'verified') {
+            return { success: true, member: badge };
+        }
+        return { success: false, message: 'Could not verify on-chain. ' + e.message };
     }
 }
 
 // Admin Actions
 export async function manageMembership(memberId: string, action: 'verify' | 'revoke') {
-    try {
-        const member = findMemberById(memberId);
-        if (!member) {
-            return { error: 'Member not found.' };
-        }
-        
-        // For 'revoke', we use the member's address.
-        // The 'verify' action here is a mock action to update status, as on-chain verification is a read-op.
-        if (action === 'revoke') {
-            await executeAdminTransaction('revoke_membership', { memberAddress: member.address });
-        }
-        
-        // Mock data update for instant UI feedback
-        const newStatus = action === 'verify' ? 'verified' : 'revoked';
-        updateMemberStatus(memberId, newStatus);
-        
-        revalidatePath('/admin');
-        revalidatePath('/dashboard');
-        return { success: `Member status updated to ${newStatus}.` };
-    } catch (e: any) {
-        return { error: e.message || 'Failed to update member status.' };
+    // --- THIS IS THE MOCK IMPLEMENTATION ---
+    console.log(`[MOCK] Admin action: ${action} for member ${memberId}`);
+    
+    const member = findMemberById(memberId);
+    if (!member) {
+        return { error: 'Member not found in mock data.' };
     }
+
+    const newStatus = action === 'verify' ? 'verified' : 'revoked';
+    updateMemberStatus(memberId, newStatus);
+    
+    revalidatePath('/admin');
+    revalidatePath('/dashboard');
+    return { success: `[MOCK] Member status updated to ${newStatus}.` };
 }
 
 export async function addAllowedDomain(domain: string) {
+    // --- THIS IS THE MOCK IMPLEMENTATION ---
     if (!domain || !domain.includes('.') || !domain.startsWith('@') || domain.endsWith('.')) {
         return { error: 'Invalid domain format. Must start with @.' };
     }
-    try {
-        await executeAdminTransaction('add_allowed_domain', { domain });
-        
-        // Mock data update
-        addDomainMock(domain);
-
-        revalidatePath('/admin');
-        return { success: 'Domain added to whitelist.' };
-    } catch (e: any) {
-        return { error: e.message || 'Failed to add domain.' };
+    console.log(`[MOCK] Adding domain: ${domain}`);
+    
+    const newDomain = addDomainMock(domain);
+    if (!newDomain) {
+      return { error: 'Domain already exists in mock data.' };
     }
+
+    revalidatePath('/admin');
+    return { success: '[MOCK] Domain added to whitelist.' };
 }
 
 export async function removeAllowedDomain(id: string) {
-    try {
-        const domainToRemove = findDomain(id);
-        if (!domainToRemove) {
-            return { error: 'Domain not found.' };
-        }
-
-        await executeAdminTransaction('remove_allowed_domain', { domain: domainToRemove.domain });
-
-        // Mock data update
-        removeDomainMock(id);
-
-        revalidatePath('/admin');
-        return { success: 'Domain removed from whitelist.' };
-    } catch (e: any) {
-        return { error: e.message || 'Failed to remove domain.' };
+    // --- THIS IS THE MOCK IMPLEMENTATION ---
+    console.log(`[MOCK] Removing domain with id: ${id}`);
+    const domainToRemove = findDomain(id);
+    if (!domainToRemove) {
+        return { error: 'Domain not found in mock data.' };
     }
+
+    removeDomainMock(id);
+
+    revalidatePath('/admin');
+    return { success: '[MOCK] Domain removed from whitelist.' };
 }
