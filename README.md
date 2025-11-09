@@ -87,9 +87,9 @@ NEXT_PUBLIC_REDIRECT_URI="http://localhost:9003/auth/callback"
 NEXT_PUBLIC_SUI_NETWORK="testnet"
 
 # Sui Smart Contract Details (from your deployment)
-NEXT_PUBLIC_PACKAGE_ID="0x647474de5fd49990644a5bc3cb8ae1792ebb489ba85a42d848812fe91c433967"
-NEXT_PUBLIC_ADMIN_CAP_ID="0x25f76f11e9c3ccf1bd7cf5daf3ae01dd936a7c1fd6388cbfcd13dc25c0c15bb0"
-NEXT_PUBLIC_REGISTRY_ID="0x1aff4634dc9178e151cfc4181edcb9654c78ef3fc5816e9cbd74c80de663046d"
+NEXT_PUBLIC_PACKAGE_ID="0xca6f713b52771f906414924353a1df83969d3d1f0f593b5b183e7cf7d3a99db6"
+NEXT_PUBLIC_ADMIN_CAP_ID="0x638a64584750a712e28bbfd77640f8040f716e1bb694e313e1c42b7ae22e090d"
+NEXT_PUBLIC_REGISTRY_ID="0x784fb669553b0c940f5a1d57386bda8dc39c8cdbc240042822455f7d4095721a"
 
 # Admin Wallet for server-side transactions (store this securely!)
 # This should be the Base64 representation of your admin keypair's secret key.
