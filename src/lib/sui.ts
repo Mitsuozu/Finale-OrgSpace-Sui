@@ -17,28 +17,24 @@ const getServerKeypair = () => {
         console.warn("SERVER_PRIVATE_KEY not set, using a mock keypair. Do not use in production.");
         return new Ed25519Keypair();
     }
-    const privateKey = process.env.SERVER_PRIVATE_KEY;
-    let privateKeyBytes: Uint8Array;
-
+    const privateKeyB64 = process.env.SERVER_PRIVATE_KEY;
+    
     try {
-        if (privateKey.startsWith('0x')) {
-            privateKeyBytes = Buffer.from(privateKey.slice(2), 'hex');
-        } else {
-            privateKeyBytes = Buffer.from(privateKey, 'base64');
+        // The private key from `sui.keystore` is a 33-byte array encoded in base64.
+        // The first byte is the scheme flag (0 for Ed25519), and the next 32 bytes are the secret key.
+        const decodedKey = Buffer.from(privateKeyB64, 'base64');
+        
+        if (decodedKey.length !== 33) {
+            throw new Error(`Invalid private key length. Expected 33 bytes for a Base64 encoded key from sui.keystore, but got ${decodedKey.length}.`);
         }
-    } catch (error) {
-        throw new Error('Failed to decode SERVER_PRIVATE_KEY. Please ensure it is a valid Base64 or Hex string.');
+
+        // We need to slice off the first byte (the scheme flag) to get the 32-byte secret key.
+        const secretKey = decodedKey.slice(1);
+
+        return Ed25519Keypair.fromSecretKey(secretKey);
+    } catch (error: any) {
+        throw new Error(`Failed to decode SERVER_PRIVATE_KEY. Please ensure it is a valid Base64 string from your sui.keystore file. Details: ${error.message}`);
     }
-
-    // The key from the CLI might be 33 bytes, with the first byte being a flag.
-    // Or it might be 32 bytes already. We ensure we take the last 32 bytes.
-    const secretKey = privateKeyBytes.slice(privateKeyBytes.length - 32);
-
-    if (secretKey.length !== 32) {
-        throw new Error(`Invalid private key length after decoding. Expected 32 bytes, got ${secretKey.length}. Please check your SERVER_PRIVATE_KEY.`);
-    }
-
-    return Ed25519Keypair.fromSecretKey(secretKey);
 };
 
 type RegistrationData = Omit<Member, 'id' | 'status'> & {emailDomain: string, organization: string};
@@ -207,6 +203,7 @@ export async function executeAdminTransaction(
         signer: keypair,
         transactionBlock: tx,
         options: { showEffects: true },
+        requestType: 'WaitForLocalExecution'
     });
     
     if (result.effects?.status.status !== 'success') {
