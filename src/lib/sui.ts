@@ -4,6 +4,7 @@
  */
 import { getFullnodeUrl, SuiClient } from '@mysten/sui.js/client';
 import { Ed25519Keypair } from '@mysten/sui.js/keypairs/ed25519';
+import { fromB64 } from '@mysten/bcs';
 import { TransactionBlock } from '@mysten/sui.js/transactions';
 import type { Member } from './types';
 import { PACKAGE_ID, REGISTRY_ID, ADMIN_CAP_ID, MODULE_NAME, SUI_CLIENT } from './sui-utils';
@@ -13,27 +14,36 @@ import type { ZkLoginSignature } from '@mysten/zklogin';
 // IMPORTANT: In a production environment, this private key must be stored
 // securely (e.g., in a secret manager) and not hardcoded.
 const getServerKeypair = () => {
-    if (!process.env.SERVER_PRIVATE_KEY) {
+    const privateKey = process.env.SERVER_PRIVATE_KEY;
+    if (!privateKey) {
         console.warn("SERVER_PRIVATE_KEY not set, using a mock keypair. Do not use in production.");
         return new Ed25519Keypair();
     }
-    const privateKeyB64 = process.env.SERVER_PRIVATE_KEY;
-    
+
     try {
-        // The private key from `sui.keystore` is a 33-byte array encoded in base64.
+        let decodedKey: Buffer;
+        // The private key from `sui.keystore` is a 33-byte array.
         // The first byte is the scheme flag (0 for Ed25519), and the next 32 bytes are the secret key.
-        const decodedKey = Buffer.from(privateKeyB64, 'base64');
+        // It can be represented as Base64 (length 44) or Hex (length 66).
         
+        // Try decoding as Base64 first.
+        if (privateKey.length === 44) {
+             decodedKey = Buffer.from(privateKey, 'base64');
+        } else {
+             // Otherwise, assume it's a Hex string
+             decodedKey = Buffer.from(privateKey, 'hex');
+        }
+
         if (decodedKey.length !== 33) {
-            throw new Error(`Invalid private key length. Expected 33 bytes for a Base64 encoded key from sui.keystore, but got ${decodedKey.length}.`);
+            throw new Error(`Invalid private key length after decoding. Expected 33 bytes, but got ${decodedKey.length}.`);
         }
 
         // We need to slice off the first byte (the scheme flag) to get the 32-byte secret key.
         const secretKey = decodedKey.slice(1);
-
         return Ed25519Keypair.fromSecretKey(secretKey);
+
     } catch (error: any) {
-        throw new Error(`Failed to decode SERVER_PRIVATE_KEY. Please ensure it is a valid Base64 string from your sui.keystore file. Details: ${error.message}`);
+        throw new Error(`Failed to decode SERVER_PRIVATE_KEY. Please ensure it is a valid Base64 or Hex string from your wallet. Details: ${error.message}`);
     }
 };
 
