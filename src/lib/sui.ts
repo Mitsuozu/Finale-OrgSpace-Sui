@@ -166,6 +166,9 @@ export async function executeAdminTransaction(
     payload: { domain?: string; memberAddress?: string }
 ) {
     const keypair = serverKeypair(); // Admin's keypair
+    const adminAddress = keypair.getPublicKey().toSuiAddress();
+    console.log(`🔑 Admin Address: ${adminAddress}. Please ensure this address has SUI for gas.`);
+
     const tx = new TransactionBlock();
     
     let target: `${string}::${string}::${string}`;
