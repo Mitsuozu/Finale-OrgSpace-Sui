@@ -1,18 +1,20 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { decodeJwt } from 'jose';
 
 export default function AuthCallbackPage() {
     const router = useRouter();
-    const searchParams = useSearchParams();
     const { login } = useAuth();
 
     useEffect(() => {
-        const id_token = searchParams.get('id_token');
+        // OAuth providers often return tokens in the URL fragment (#)
+        const hash = window.location.hash;
+        const params = new URLSearchParams(hash.substring(1)); // remove the '#'
+        const id_token = params.get('id_token');
         console.log("Handling OAuth callback...");
 
         if (id_token) {
@@ -47,7 +49,7 @@ export default function AuthCallbackPage() {
              console.error("No id_token found in callback URL");
              router.push('/');
         }
-    }, [searchParams, router, login]);
+    }, [router, login]);
 
     return (
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] text-center">
