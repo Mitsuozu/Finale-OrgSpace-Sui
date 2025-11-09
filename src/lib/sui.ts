@@ -16,8 +16,9 @@ import type { ZkLoginSignature } from '@mysten/zklogin';
 const getServerKeypair = () => {
     const privateKey = process.env.SERVER_PRIVATE_KEY;
     if (!privateKey) {
-        console.warn("SERVER_PRIVATE_KEY not set, using a mock keypair. Do not use in production.");
-        return new Ed25519Keypair();
+        console.warn("SERVER_PRIVATE_KEY not set. Transaction will fail. Do not use in production.");
+        // Return a dummy keypair if not set, to avoid crashing the server on startup.
+        return new Ed25519Keypair(); 
     }
 
     try {
@@ -199,21 +200,30 @@ export async function executeAdminTransaction(
     tx.moveCall({ target, arguments: args });
 
     console.log(`Executing admin transaction: ${action}...`);
-    const result = await SUI_CLIENT.signAndExecuteTransactionBlock({
-        signer: keypair,
-        transactionBlock: tx,
-        options: { showEffects: true },
-        requestType: 'WaitForLocalExecution'
-    });
-    
-    if (result.effects?.status.status !== 'success') {
-        const error = result.effects?.status.error;
-        if (error?.includes("Failure { SuiError: { category: \"insufficientGas\", error: ")) {
-             throw new Error(`Transaction failed: Insufficient gas. Please ensure the admin wallet (${adminAddress}) has SUI tokens for gas fees.`);
+    try {
+        const result = await SUI_CLIENT.signAndExecuteTransactionBlock({
+            signer: keypair,
+            transactionBlock: tx,
+            options: { showEffects: true },
+            requestType: 'WaitForLocalExecution'
+        });
+        
+        if (result.effects?.status.status !== 'success') {
+            const error = result.effects?.status.error;
+            // Catch the specific gas error here
+            if (error?.includes("No valid gas coins found for the transaction")) {
+                 throw new Error(`No valid gas coins found for the transaction. Please fund this admin address with testnet SUI: ${adminAddress}`);
+            }
+            throw new Error(`Transaction failed: ${error}`);
         }
-        throw new Error(`Transaction failed: ${error}`);
-    }
 
-    console.log('Admin transaction successful. Digest:', result.digest);
-    return { success: true, digest: result.digest };
+        console.log('Admin transaction successful. Digest:', result.digest);
+        return { success: true, digest: result.digest };
+    } catch (e: any) {
+        // Catch network or other pre-flight errors
+        if (e.message.includes("No valid gas coins")) {
+            throw new Error(`No valid gas coins found for the transaction. Please fund this admin address with testnet SUI: ${adminAddress}`);
+        }
+        throw e;
+    }
 }
