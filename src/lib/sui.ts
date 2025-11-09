@@ -21,29 +21,20 @@ const getServerKeypair = () => {
     }
 
     try {
-        let decodedKey: Buffer;
-        // The private key from `sui.keystore` is a 33-byte array.
+        // The private key from `sui.keystore` is a Base64 string that decodes to a 33-byte array.
         // The first byte is the scheme flag (0 for Ed25519), and the next 32 bytes are the secret key.
-        // It can be represented as Base64 (length 44) or Hex (length 66).
+        const decoded = Buffer.from(privateKey, 'base64');
         
-        // Try decoding as Base64 first.
-        if (privateKey.length === 44) {
-             decodedKey = Buffer.from(privateKey, 'base64');
-        } else {
-             // Otherwise, assume it's a Hex string
-             decodedKey = Buffer.from(privateKey, 'hex');
-        }
-
-        if (decodedKey.length !== 33) {
-            throw new Error(`Invalid private key length after decoding. Expected 33 bytes, but got ${decodedKey.length}.`);
+        if (decoded.length !== 33) {
+            throw new Error(`Invalid private key length after decoding. Expected 33 bytes, but got ${decoded.length}. Please ensure you have the correct Base64 private key from your sui.keystore file.`);
         }
 
         // We need to slice off the first byte (the scheme flag) to get the 32-byte secret key.
-        const secretKey = decodedKey.slice(1);
+        const secretKey = decoded.slice(1);
         return Ed25519Keypair.fromSecretKey(secretKey);
 
     } catch (error: any) {
-        throw new Error(`Failed to decode SERVER_PRIVATE_KEY. Please ensure it is a valid Base64 or Hex string from your wallet. Details: ${error.message}`);
+        throw new Error(`Failed to decode SERVER_PRIVATE_KEY. Please ensure it is a valid Base64 string from your wallet's exported private key. Details: ${error.message}`);
     }
 };
 
@@ -217,7 +208,11 @@ export async function executeAdminTransaction(
     });
     
     if (result.effects?.status.status !== 'success') {
-        throw new Error(`Transaction failed: ${result.effects?.status.error}`);
+        const error = result.effects?.status.error;
+        if (error?.includes("Failure { SuiError: { category: \"insufficientGas\", error: ")) {
+             throw new Error(`Transaction failed: Insufficient gas. Please ensure the admin wallet (${adminAddress}) has SUI tokens for gas fees.`);
+        }
+        throw new Error(`Transaction failed: ${error}`);
     }
 
     console.log('Admin transaction successful. Digest:', result.digest);
