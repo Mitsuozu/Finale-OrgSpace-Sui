@@ -3,8 +3,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { addMember as addMemberMock, findBadge, removeDomain, updateMemberStatus, findMemberById, findDomain, addDomain as addDomainMock, findMemberByAddress, isDomainWhitelisted as isDomainWhitelistedMock } from './data';
-import { registerMemberOnSui, verifyBadgeOnSui, executeAdminTransaction } from './sui';
+import { addMember as addMemberMock, findBadge, removeDomain as removeDomainMock, updateMemberStatus, findMemberById, findDomain, addDomain as addDomainMock, findMemberByAddress, isDomainWhitelisted as isDomainWhitelistedMock } from './data';
+import { registerMemberOnSui, verifyBadgeOnSui, executeAdminTransaction, isDomainWhitelisted } from './sui';
 import type { ZkLoginSignature } from '@mysten/zklogin';
 
 const registerSchema = z.object({
@@ -23,9 +23,6 @@ const registerSchema = z.object({
 export async function registerMember(formData: FormData) {
   const data = Object.fromEntries(formData.entries());
 
-  // The user object is now stored in localStorage and passed to the form,
-  // which includes the email. The auth context handles getting this.
-  // We need to derive the email domain from the user's email.
   const userJson = formData.get('user') as string;
   if (!userJson) {
       return { error: 'User data is missing.' };
@@ -46,13 +43,15 @@ export async function registerMember(formData: FormData) {
   }
 
   try {
-    // --- THIS IS THE MOCK IMPLEMENTATION ---
-    const isDomainInWhitelist = isDomainWhitelistedMock(validatedFields.data.emailDomain);
-    if (!isDomainInWhitelist) {
-        return { error: `Your email domain (${validatedFields.data.emailDomain}) is not authorized.` };
+    const domainIsAllowed = await isDomainWhitelisted(validatedFields.data.emailDomain);
+    if (!domainIsAllowed) {
+        return { error: `Your email domain (${validatedFields.data.emailDomain}) is not authorized for registration.` };
     }
     
-    // Add to our mock DB for instant UI updates.
+    // In a real app, the client would provide the full ZkLoginSignature.
+    // Since this is a server action without client-side proof generation logic piped in yet,
+    // we cannot call the real `registerMemberOnSui` which requires a real signature.
+    // We will proceed with the mock implementation for registration but use real on-chain checks.
     addMemberMock({ 
         ...validatedFields.data,
         id: `badge-mock-${Date.now()}`,
@@ -60,22 +59,20 @@ export async function registerMember(formData: FormData) {
 
     revalidatePath('/admin');
     revalidatePath('/dashboard');
-    return { success: 'Registration submitted successfully! Please wait for admin verification.' };
+    return { success: 'Registration submitted! Please wait for admin verification.' };
   } catch (e: any) {
     console.error(e);
-    return { error: e.message || 'Failed to register member on-chain.' };
+    return { error: e.message || 'Failed to register member.' };
   }
 }
 
 export async function verifyBadge(id: string, address: string) {
     try {
-        // We still check local data first to see if we even know about this badge.
         const badge = findBadge(id, address);
         if (!badge) {
              return { success: false, message: 'Badge not found in local data.' };
         }
         
-        // This part still does a read-only check against the chain.
         const { isValid } = await verifyBadgeOnSui(badge.id, badge.address);
 
         if(isValid) {
@@ -84,11 +81,7 @@ export async function verifyBadge(id: string, address: string) {
         return { success: false, message: 'On-chain verification failed or badge is revoked.' };
 
     } catch (e: any) {
-        // Since we are mocking, let's just return true if the badge is 'verified' locally.
-        const badge = findBadge(id, address);
-        if (badge?.status === 'verified') {
-            return { success: true, member: badge };
-        }
+        console.error("Verification error:", e);
         return { success: false, message: 'Could not verify on-chain. ' + e.message };
     }
 }
@@ -97,21 +90,25 @@ export async function verifyBadge(id: string, address: string) {
 export async function manageMembership(memberId: string, action: 'verify' | 'revoke') {
     const member = findMemberById(memberId);
     if (!member) {
-        return { error: 'Member not found in mock data.' };
+        return { error: 'Member not found.' };
     }
 
     try {
         const newStatus = action === 'verify' ? 'verified' : 'revoked';
         
-        // MOCK: Directly update mock data instead of real transaction
-        console.log(`[MOCK] Simulating admin action for ${action} on member ${member.address}`);
+        if (action === 'revoke') {
+            await executeAdminTransaction('revoke_membership', { memberAddress: member.address });
+        }
+        
+        // For 'verify', we assume off-chain verification is done, and this is just for local status.
+        // A real contract might have an admin-verify function. For now, we update local mock data.
         updateMemberStatus(memberId, newStatus);
         
         revalidatePath('/admin');
         revalidatePath('/dashboard');
-        return { success: `[MOCK] Member status updated to ${newStatus}.` };
+        return { success: `Member status updated to ${newStatus}.` };
     } catch(e: any) {
-        return { error: `[MOCK] Failed to execute admin transaction: ${e.message}`};
+        return { error: `Failed to execute admin transaction: ${e.message}`};
     }
 }
 
@@ -121,34 +118,29 @@ export async function addAllowedDomain(domain: string) {
     }
     
     try {
-        // MOCK: Directly update mock data
-        console.log(`[MOCK] Simulating adding domain ${domain}`);
-        const newDomain = addDomainMock(domain);
-        if (!newDomain) {
-          return { error: 'Domain already exists in mock data.' };
-        }
+        await executeAdminTransaction('add_allowed_domain', { domain });
+        addDomainMock(domain);
 
         revalidatePath('/admin');
-        return { success: '[MOCK] Domain added to whitelist.' };
+        return { success: 'Domain successfully added to whitelist on-chain.' };
     } catch (e: any) {
-        return { error: `[MOCK] Failed to add domain: ${e.message}`};
+        return { error: `Failed to add domain on-chain: ${e.message}`};
     }
 }
 
 export async function removeAllowedDomain(id: string) {
     const domainToRemove = findDomain(id);
     if (!domainToRemove) {
-        return { error: 'Domain not found in mock data.' };
+        return { error: 'Domain not found.' };
     }
 
     try {
-        // MOCK: Directly update mock data
-        console.log(`[MOCK] Simulating removing domain ${domainToRemove.domain}`);
-        removeDomain(id);
+        await executeAdminTransaction('remove_allowed_domain', { domain: domainToRemove.domain });
+        removeDomainMock(id);
 
         revalidatePath('/admin');
-        return { success: '[MOCK] Domain removed from whitelist.' };
+        return { success: 'Domain successfully removed from whitelist on-chain.' };
     } catch (e: any) {
-        return { error: `[MOCK] Failed to remove domain: ${e.message}`};
+        return { error: `Failed to remove domain on-chain: ${e.message}`};
     }
 }
