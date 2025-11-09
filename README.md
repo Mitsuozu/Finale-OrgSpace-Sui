@@ -83,7 +83,7 @@ NEXT_PUBLIC_GOOGLE_CLIENT_ID="your-google-client-id.apps.googleusercontent.com"
 NEXT_PUBLIC_ZKLOGIN_SALT="your_random_salt_here"
 
 # Sui Network Configuration
-NEXT_PUBLIC_REDIRECT_URI="http://localhost:9002/auth/callback"
+NEXT_PUBLIC_REDIRECT_URI="http://localhost:9003/auth/callback"
 NEXT_PUBLIC_SUI_NETWORK="testnet"
 
 # Sui Smart Contract Details (from your deployment)

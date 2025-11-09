@@ -17,4 +17,4 @@ export const MODULE_NAME = 'membership_badge';
 export const REDIRECT_URI =
   typeof window !== 'undefined'
     ? `${window.location.origin}/auth/callback`
-    : 'http://localhost:9002/auth/callback';
+    : 'http://localhost:9003/auth/callback';
