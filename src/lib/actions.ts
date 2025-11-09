@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { addMember as addMemberMock, findBadge, removeDomain, updateMemberStatus, findMemberById, findDomain, addDomain as addDomainMock } from './data';
+import { addMember as addMemberMock, findBadge, removeDomain, updateMemberStatus, findMemberById, findDomain, addDomain as addDomainMock, findMemberByAddress } from './data';
 import { registerMemberOnSui, verifyBadgeOnSui, executeAdminTransaction, isDomainWhitelisted } from './sui';
 import type { ZkLoginSignature } from '@mysten/zklogin';
 
