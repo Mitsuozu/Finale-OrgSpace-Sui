@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useTransition } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Check, X, MoreVertical, Loader2 } from 'lucide-react';
+import { Check, X, MoreVertical } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,7 +16,7 @@ import { manageMembership } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import type { Member } from '@/lib/types';
 
-export default function MemberTable({ initialMembers }: { initialMembers: Member[] }) {
+export default function MemberTable({ members }: { members: Member[] }) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
@@ -50,7 +50,7 @@ export default function MemberTable({ initialMembers }: { initialMembers: Member
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {initialMembers.length > 0 ? initialMembers.map((member) => (
+                    {members.length > 0 ? members.map((member) => (
                         <TableRow key={member.id}>
                             <TableCell className="font-medium">{member.name}</TableCell>
                             <TableCell className="hidden md:table-cell">{member.program}</TableCell>

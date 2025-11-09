@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Loader2, ShieldAlert } from "lucide-react";
 import { members, whitelistedDomains } from "@/lib/data";
-import type { Member, WhitelistedDomain } from "@/lib/types";
 import MemberTable from "@/components/admin/member-table";
 import DomainManager from "@/components/admin/domain-manager";
 
@@ -14,10 +13,6 @@ export default function AdminPage() {
     const router = useRouter();
     const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
-    // Using state to hold data so it feels like a real app fetching data
-    const [allMembers, setAllMembers] = useState<Member[]>([]);
-    const [domains, setDomains] = useState<WhitelistedDomain[]>([]);
-
     useEffect(() => {
         if (!authLoading) {
             if (!user || !user.isAdmin) {
@@ -25,9 +20,6 @@ export default function AdminPage() {
                 setTimeout(() => router.push('/'), 3000);
             } else {
                 setIsAuthorized(true);
-                // Simulate fetching data
-                setAllMembers(members);
-                setDomains(whitelistedDomains);
             }
         }
     }, [user, authLoading, router]);
@@ -55,8 +47,8 @@ export default function AdminPage() {
         <div className="container py-12">
             <h1 className="text-3xl font-bold mb-8 font-headline">Admin Dashboard</h1>
             <div className="space-y-12">
-                <MemberTable initialMembers={allMembers} />
-                <DomainManager initialDomains={domains} />
+                <MemberTable members={members} />
+                <DomainManager domains={whitelistedDomains} />
             </div>
         </div>
     );

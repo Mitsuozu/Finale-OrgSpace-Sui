@@ -20,7 +20,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
-export default function DomainManager({ initialDomains }: { initialDomains: WhitelistedDomain[] }) {
+export default function DomainManager({ domains }: { domains: WhitelistedDomain[] }) {
   const [newDomain, setNewDomain] = useState('');
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
@@ -70,7 +70,7 @@ export default function DomainManager({ initialDomains }: { initialDomains: Whit
         </div>
         <div className="rounded-md border">
           <ul className="divide-y divide-border">
-            {initialDomains.map((domain) => (
+            {domains.map((domain) => (
               <li key={domain.id} className="flex items-center justify-between p-3">
                 <span className="font-mono text-sm">{domain.domain}</span>
                 <AlertDialog>
@@ -96,7 +96,7 @@ export default function DomainManager({ initialDomains }: { initialDomains: Whit
                 </AlertDialog>
               </li>
             ))}
-             {initialDomains.length === 0 && (
+             {domains.length === 0 && (
                 <li className="p-4 text-center text-sm text-muted-foreground">No domains whitelisted.</li>
              )}
           </ul>
