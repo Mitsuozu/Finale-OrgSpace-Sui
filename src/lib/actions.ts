@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { addMember as addMemberMock, findBadge, removeDomain, updateMemberStatus, findMemberByAddress, findDomain, addDomain as addDomainMock } from './data';
+import { addMember as addMemberMock, findBadge, removeDomain, updateMemberStatus, findMemberById, findDomain, addDomain as addDomainMock } from './data';
 import { registerMemberOnSui, verifyBadgeOnSui, executeAdminTransaction, isDomainWhitelisted } from './sui';
 import type { ZkLoginSignature } from '@mysten/zklogin';
 
@@ -94,19 +94,19 @@ export async function verifyBadge(id: string, address: string) {
 
 // Admin Actions
 export async function manageMembership(memberId: string, action: 'verify' | 'revoke') {
-    // --- THIS IS THE MOCK IMPLEMENTATION ---
-    console.log(`[MOCK] Admin action: ${action} for member ${memberId}`);
-    
     const member = findMemberById(memberId);
     if (!member) {
         return { error: 'Member not found in mock data.' };
     }
 
     try {
-        // const result = await executeAdminTransaction(action === 'verify' ? 'add_allowed_domain' : 'revoke_membership', {
+        const newStatus = action === 'verify' ? 'verified' : 'revoked';
+        
+        // MOCK: Directly update mock data instead of real transaction
+        console.log(`[MOCK] Calling executeAdminTransaction for ${action} on member ${member.address}`);
+        // const result = await executeAdminTransaction(action === 'verify' ? 'verify_membership' : 'revoke_membership', {
         //     memberAddress: member.address,
         // });
-        const newStatus = action === 'verify' ? 'verified' : 'revoked';
         updateMemberStatus(memberId, newStatus);
         
         revalidatePath('/admin');
@@ -118,13 +118,13 @@ export async function manageMembership(memberId: string, action: 'verify' | 'rev
 }
 
 export async function addAllowedDomain(domain: string) {
-    // --- THIS IS THE MOCK IMPLEMENTATION ---
     if (!domain || !domain.includes('.') || !domain.startsWith('@') || domain.endsWith('.')) {
         return { error: 'Invalid domain format. Must start with @.' };
     }
-    console.log(`[MOCK] Adding domain: ${domain}`);
     
     try {
+        // MOCK: Directly update mock data
+        console.log(`[MOCK] Calling executeAdminTransaction to add domain ${domain}`);
         // const result = await executeAdminTransaction('add_allowed_domain', { domain });
         const newDomain = addDomainMock(domain);
         if (!newDomain) {
@@ -139,14 +139,14 @@ export async function addAllowedDomain(domain: string) {
 }
 
 export async function removeAllowedDomain(id: string) {
-    // --- THIS IS THE MOCK IMPLEMENTATION ---
-    console.log(`[MOCK] Removing domain with id: ${id}`);
     const domainToRemove = findDomain(id);
     if (!domainToRemove) {
         return { error: 'Domain not found in mock data.' };
     }
 
     try {
+        // MOCK: Directly update mock data
+        console.log(`[MOCK] Calling executeAdminTransaction to remove domain ${domainToRemove.domain}`);
         // const result = await executeAdminTransaction('remove_allowed_domain', { domain: domainToRemove.domain });
         removeDomain(id);
 
