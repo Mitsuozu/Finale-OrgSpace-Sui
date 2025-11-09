@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { addMember as addMemberMock, findBadge, removeDomain as removeDomainMock, updateMemberStatus, findMemberByAddress, findDomain, findMemberById, addDomain as addDomainMock } from './data';
+import { addMember as addMemberMock, findBadge, removeDomain, updateMemberStatus, findMemberByAddress, findDomain, addDomain as addDomainMock } from './data';
 import { registerMemberOnSui, verifyBadgeOnSui, executeAdminTransaction, isDomainWhitelisted } from './sui';
 import type { ZkLoginSignature } from '@mysten/zklogin';
 
@@ -45,34 +45,13 @@ export async function registerMember(formData: FormData) {
   }
 
   try {
-    const domainIsAllowed = await isDomainWhitelisted(validatedFields.data.emailDomain);
-    if (!domainIsAllowed) {
-        return { error: `Your email domain (${validatedFields.data.emailDomain}) is not authorized.`}
+    // --- THIS IS THE MOCK IMPLEMENTATION ---
+    const isDomainInWhitelist = isDomainWhitelisted(validatedFields.data.emailDomain);
+    if (!isDomainInWhitelist) {
+        return { error: `Your email domain (${validatedFields.data.emailDomain}) is not authorized.` };
     }
-
-    // In a real app, the client would provide the full ZkLoginSignature
-    const mockZkLoginSignature: ZkLoginSignature = {
-        inputs: {
-            kty: "RSA",
-            e: "AQAB",
-            n: "mock-n",
-            maxEpoch: 0,
-            addrSeed: "mock-seed",
-            iss: "mock-iss",
-        },
-        proofPoints: {
-            a: [],
-            b: [[], []],
-            c: [],
-        },
-    };
-    
-    // For this demo, we will use a mock registration on-chain as it doesn't require the admin key.
-    console.log("Simulating on-chain registration. This part still connects to Sui.");
-    // const result = await registerMemberOnSui(suiData, mockZkLoginSignature);
     
     // Add to our mock DB for instant UI updates.
-    // In the real app, we'd use the badgeId from the `result` above.
     addMemberMock({ 
         ...validatedFields.data,
         id: `badge-mock-${Date.now()}`,
@@ -123,12 +102,19 @@ export async function manageMembership(memberId: string, action: 'verify' | 'rev
         return { error: 'Member not found in mock data.' };
     }
 
-    const newStatus = action === 'verify' ? 'verified' : 'revoked';
-    updateMemberStatus(memberId, newStatus);
-    
-    revalidatePath('/admin');
-    revalidatePath('/dashboard');
-    return { success: `[MOCK] Member status updated to ${newStatus}.` };
+    try {
+        // const result = await executeAdminTransaction(action === 'verify' ? 'add_allowed_domain' : 'revoke_membership', {
+        //     memberAddress: member.address,
+        // });
+        const newStatus = action === 'verify' ? 'verified' : 'revoked';
+        updateMemberStatus(memberId, newStatus);
+        
+        revalidatePath('/admin');
+        revalidatePath('/dashboard');
+        return { success: `[MOCK] Member status updated to ${newStatus}.` };
+    } catch(e: any) {
+        return { error: `[MOCK] Failed to execute admin transaction: ${e.message}`};
+    }
 }
 
 export async function addAllowedDomain(domain: string) {
@@ -138,13 +124,18 @@ export async function addAllowedDomain(domain: string) {
     }
     console.log(`[MOCK] Adding domain: ${domain}`);
     
-    const newDomain = addDomainMock(domain);
-    if (!newDomain) {
-      return { error: 'Domain already exists in mock data.' };
-    }
+    try {
+        // const result = await executeAdminTransaction('add_allowed_domain', { domain });
+        const newDomain = addDomainMock(domain);
+        if (!newDomain) {
+          return { error: 'Domain already exists in mock data.' };
+        }
 
-    revalidatePath('/admin');
-    return { success: '[MOCK] Domain added to whitelist.' };
+        revalidatePath('/admin');
+        return { success: '[MOCK] Domain added to whitelist.' };
+    } catch (e: any) {
+        return { error: `[MOCK] Failed to add domain: ${e.message}`};
+    }
 }
 
 export async function removeAllowedDomain(id: string) {
@@ -155,8 +146,13 @@ export async function removeAllowedDomain(id: string) {
         return { error: 'Domain not found in mock data.' };
     }
 
-    removeDomainMock(id);
+    try {
+        // const result = await executeAdminTransaction('remove_allowed_domain', { domain: domainToRemove.domain });
+        removeDomain(id);
 
-    revalidatePath('/admin');
-    return { success: '[MOCK] Domain removed from whitelist.' };
+        revalidatePath('/admin');
+        return { success: '[MOCK] Domain removed from whitelist.' };
+    } catch (e: any) {
+        return { error: `[MOCK] Failed to remove domain: ${e.message}`};
+    }
 }

@@ -6,7 +6,10 @@ import React, { createContext, useState, useEffect, useMemo, useCallback } from 
 // This is a placeholder for a real user object once zkLogin completes.
 // In a full implementation, this might be fetched from a DB after login.
 const getMockUserFromEmail = (email: string, zkAddress: string): User => {
-    const isAdmin = email.endsWith('@university.edu'); // Example admin logic
+    // This is a placeholder for admin logic. In a real app, this would be
+    // determined by a role lookup in a database or from the contract state.
+    // For now, let's make a specific email an admin for testing.
+    const isAdmin = email === 'admin@sui.org'; 
     return {
         name: email.split('@')[0],
         email: email,
