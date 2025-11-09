@@ -16,9 +16,8 @@ import {
 import { manageMembership } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import type { Member } from '@/lib/types';
-import { mutate } from 'swr';
 
-export default function MemberTable({ members }: { members: Member[] }) {
+export default function MemberTable({ initialMembers }: { initialMembers: Member[] }) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
@@ -29,7 +28,6 @@ export default function MemberTable({ members }: { members: Member[] }) {
         toast({ variant: 'destructive', title: 'Error', description: result.error });
         } else {
         toast({ title: 'Success', description: result.success });
-        mutate('/api/members'); // Revalidate members data
         }
     });
   };
@@ -53,7 +51,7 @@ export default function MemberTable({ members }: { members: Member[] }) {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {members.length > 0 ? members.map((member) => (
+                    {initialMembers.length > 0 ? initialMembers.map((member) => (
                         <TableRow key={member.id}>
                             <TableCell className="font-medium">{member.name}</TableCell>
                             <TableCell className="hidden md:table-cell">{member.program}</TableCell>

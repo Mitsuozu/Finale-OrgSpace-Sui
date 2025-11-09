@@ -58,7 +58,7 @@ export async function registerMember(formData: FormData) {
         id: `badge-mock-${Date.now()}`,
     });
 
-    revalidatePath('/api/members');
+    revalidatePath('/admin');
     revalidatePath('/dashboard');
     return { success: 'Registration submitted successfully! Please wait for admin verification.' };
   } catch (e: any) {
@@ -107,7 +107,7 @@ export async function manageMembership(memberId: string, action: 'verify' | 'rev
         console.log(`[MOCK] Simulating admin action for ${action} on member ${member.address}`);
         updateMemberStatus(memberId, newStatus);
         
-        revalidatePath('/api/members'); // Revalidate API route
+        revalidatePath('/admin');
         revalidatePath('/dashboard');
         return { success: `[MOCK] Member status updated to ${newStatus}.` };
     } catch(e: any) {
@@ -128,9 +128,10 @@ export async function addAllowedDomain(domain: string) {
           return { error: 'Domain already exists in mock data.' };
         }
 
-        revalidatePath('/api/domains'); // Revalidate API route
+        revalidatePath('/admin');
         return { success: '[MOCK] Domain added to whitelist.' };
-    } catch (e: any)        return { error: `[MOCK] Failed to add domain: ${e.message}`};
+    } catch (e: any) {
+        return { error: `[MOCK] Failed to add domain: ${e.message}`};
     }
 }
 
@@ -145,7 +146,7 @@ export async function removeAllowedDomain(id: string) {
         console.log(`[MOCK] Simulating removing domain ${domainToRemove.domain}`);
         removeDomain(id);
 
-        revalidatePath('/api/domains'); // Revalidate API route
+        revalidatePath('/admin');
         return { success: '[MOCK] Domain removed from whitelist.' };
     } catch (e: any) {
         return { error: `[MOCK] Failed to remove domain: ${e.message}`};

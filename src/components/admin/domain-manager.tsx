@@ -20,9 +20,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { mutate } from 'swr';
 
-export default function DomainManager({ domains }: { domains: WhitelistedDomain[] }) {
+export default function DomainManager({ initialDomains }: { initialDomains: WhitelistedDomain[] }) {
   const [newDomain, setNewDomain] = useState('');
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
@@ -35,7 +34,6 @@ export default function DomainManager({ domains }: { domains: WhitelistedDomain[
       } else {
         toast({ title: 'Success', description: result.success });
         setNewDomain('');
-        mutate('/api/domains'); // Revalidate the domains data
       }
     });
   };
@@ -47,7 +45,6 @@ export default function DomainManager({ domains }: { domains: WhitelistedDomain[
         toast({ variant: 'destructive', title: 'Error', description: result.error });
       } else {
         toast({ title: 'Success', description: result.success });
-        mutate('/api/domains'); // Revalidate the domains data
       }
     });
   };
@@ -74,7 +71,7 @@ export default function DomainManager({ domains }: { domains: WhitelistedDomain[
         </div>
         <div className="rounded-md border">
           <ul className="divide-y divide-border">
-            {domains.map((domain) => (
+            {initialDomains.map((domain) => (
               <li key={domain.id} className="flex items-center justify-between p-3">
                 <span className="font-mono text-sm">{domain.domain}</span>
                 <AlertDialog>
@@ -100,7 +97,7 @@ export default function DomainManager({ domains }: { domains: WhitelistedDomain[
                 </AlertDialog>
               </li>
             ))}
-             {domains.length === 0 && (
+             {initialDomains.length === 0 && (
                 <li className="p-4 text-center text-sm text-muted-foreground">No domains whitelisted.</li>
              )}
           </ul>

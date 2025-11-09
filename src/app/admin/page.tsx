@@ -7,21 +7,15 @@ import { useEffect, useState } from "react";
 import { Loader2, ShieldAlert } from "lucide-react";
 import MemberTable from "@/components/admin/member-table";
 import DomainManager from "@/components/admin/domain-manager";
-import useSWR from 'swr';
-import type { Member, WhitelistedDomain } from "@/lib/types";
-
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+import { members, whitelistedDomains } from "@/lib/data";
 
 export default function AdminPage() {
-    const { user, loading: authLoading } = useAuth();
+    const { user, loading } = useAuth();
     const router = useRouter();
     const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
-    const { data: members, error: membersError, isLoading: membersLoading } = useSWR<Member[]>('/api/members', fetcher);
-    const { data: domains, error: domainsError, isLoading: domainsLoading } = useSWR<WhitelistedDomain[]>('/api/domains', fetcher);
-
     useEffect(() => {
-        if (!authLoading) {
+        if (!loading) {
             if (!user || !user.isAdmin) {
                 setIsAuthorized(false);
                 setTimeout(() => router.push('/'), 3000);
@@ -29,15 +23,14 @@ export default function AdminPage() {
                 setIsAuthorized(true);
             }
         }
-    }, [user, authLoading, router]);
+    }, [user, loading, router]);
 
-    const pageLoading = authLoading || isAuthorized === null || membersLoading || domainsLoading;
 
-    if (pageLoading) {
+    if (loading || isAuthorized === null) {
         return (
             <div className="flex items-center justify-center h-full min-h-[calc(100vh-10rem)]">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="ml-2">{isAuthorized === null ? "Verifying authorization..." : "Loading dashboard data..."}</p>
+                <p className="ml-2">Verifying authorization...</p>
             </div>
         );
     }
@@ -52,16 +45,12 @@ export default function AdminPage() {
         );
     }
 
-    if (membersError || domainsError) {
-        return <div className="text-center text-destructive">Failed to load data. Please try again later.</div>
-    }
-
     return (
         <div className="container py-12">
             <h1 className="text-3xl font-bold mb-8 font-headline">Admin Dashboard</h1>
             <div className="space-y-12">
-                <MemberTable members={members || []} />
-                <DomainManager domains={domains || []} />
+                <MemberTable initialMembers={members} />
+                <DomainManager initialDomains={whitelistedDomains} />
             </div>
         </div>
     );
