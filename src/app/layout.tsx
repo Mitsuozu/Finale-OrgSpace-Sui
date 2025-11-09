@@ -7,7 +7,7 @@ import Footer from '@/components/footer';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'SuiOrg - University Membership on Sui',
+  title: 'OrgSpace - University Membership on Sui',
   description: 'Manage and verify university memberships on the Sui blockchain with zkLogin.',
   icons: [{ rel: 'icon', url: '/favicon.ico' }],
 };

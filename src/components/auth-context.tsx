@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Check for an existing session
     try {
-      const storedUser = localStorage.getItem('sui-org-user');
+      const storedUser = localStorage.getItem('orgspace-user');
       if (storedUser) {
         setUser(JSON.parse(storedUser));
       }
@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const userToLogin = getMockUserFromEmail(email, zkAddress);
     setUser(userToLogin);
     try {
-      localStorage.setItem('sui-org-user', JSON.stringify(userToLogin));
+      localStorage.setItem('orgspace-user', JSON.stringify(userToLogin));
     } catch (error) {
       console.error('Could not access localStorage', error);
     }
@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(() => {
     setUser(null);
     try {
-      localStorage.removeItem('sui-org-user');
+      localStorage.removeItem('orgspace-user');
       // Additional session clearing logic for zkLogin will go here
       sessionStorage.removeItem('zk-ephemeral-keypair');
       sessionStorage.removeItem('zk-nonce');

@@ -15,7 +15,7 @@ export default function Home() {
               Decentralized Identity for Your Organization
             </h1>
             <p className="max-w-[700px] mx-auto text-muted-foreground text-lg md:text-xl">
-              SuiOrg leverages zkLogin on the Sui blockchain to provide secure, verifiable, and private membership credentials for your university or organization.
+              OrgSpace leverages zkLogin on the Sui blockchain to provide secure, verifiable, and private membership credentials for your university or organization.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
                <Button asChild size="lg">
@@ -38,7 +38,7 @@ export default function Home() {
         <div className="container px-4 md:px-6">
           <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
             <div className="inline-block rounded-lg bg-secondary px-3 py-1 text-sm font-semibold tracking-wider uppercase">Key Features</div>
-            <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">Why SuiOrg?</h2>
+            <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">Why OrgSpace?</h2>
             <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
               Empower your members with self-sovereign identity while simplifying administrative overhead.
             </p>
@@ -91,7 +91,7 @@ export default function Home() {
                     Public Badge Verification
                 </h2>
                 <p className="text-muted-foreground md:text-lg/relaxed">
-                    Publicly verify the authenticity of a SuiOrg membership badge using its on-chain identifiers. Enter the badge ID and zkLogin address to confirm its status.
+                    Publicly verify the authenticity of a OrgSpace membership badge using its on-chain identifiers. Enter the badge ID and zkLogin address to confirm its status.
                 </p>
             </div>
             <div className="w-full">
