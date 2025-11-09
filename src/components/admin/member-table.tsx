@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useTransition } from 'react';
@@ -15,6 +16,7 @@ import {
 import { manageMembership } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import type { Member } from '@/lib/types';
+import { mutate } from 'swr';
 
 export default function MemberTable({ members }: { members: Member[] }) {
   const [isPending, startTransition] = useTransition();
@@ -27,6 +29,7 @@ export default function MemberTable({ members }: { members: Member[] }) {
         toast({ variant: 'destructive', title: 'Error', description: result.error });
         } else {
         toast({ title: 'Success', description: result.success });
+        mutate('/api/members'); // Revalidate members data
         }
     });
   };

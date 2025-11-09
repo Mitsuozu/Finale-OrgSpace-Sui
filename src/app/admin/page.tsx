@@ -1,17 +1,24 @@
+
 'use client';
 
 import { useAuth } from "@/lib/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Loader2, ShieldAlert } from "lucide-react";
-import { members, whitelistedDomains } from "@/lib/data";
 import MemberTable from "@/components/admin/member-table";
 import DomainManager from "@/components/admin/domain-manager";
+import useSWR from 'swr';
+import type { Member, WhitelistedDomain } from "@/lib/types";
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function AdminPage() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
     const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+
+    const { data: members, error: membersError, isLoading: membersLoading } = useSWR<Member[]>('/api/members', fetcher);
+    const { data: domains, error: domainsError, isLoading: domainsLoading } = useSWR<WhitelistedDomain[]>('/api/domains', fetcher);
 
     useEffect(() => {
         if (!authLoading) {
@@ -24,11 +31,13 @@ export default function AdminPage() {
         }
     }, [user, authLoading, router]);
 
-    if (authLoading || isAuthorized === null) {
+    const pageLoading = authLoading || isAuthorized === null || membersLoading || domainsLoading;
+
+    if (pageLoading) {
         return (
             <div className="flex items-center justify-center h-full min-h-[calc(100vh-10rem)]">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="ml-2">Verifying authorization...</p>
+                <p className="ml-2">{isAuthorized === null ? "Verifying authorization..." : "Loading dashboard data..."}</p>
             </div>
         );
     }
@@ -43,12 +52,16 @@ export default function AdminPage() {
         );
     }
 
+    if (membersError || domainsError) {
+        return <div className="text-center text-destructive">Failed to load data. Please try again later.</div>
+    }
+
     return (
         <div className="container py-12">
             <h1 className="text-3xl font-bold mb-8 font-headline">Admin Dashboard</h1>
             <div className="space-y-12">
-                <MemberTable members={members} />
-                <DomainManager domains={whitelistedDomains} />
+                <MemberTable members={members || []} />
+                <DomainManager domains={domains || []} />
             </div>
         </div>
     );

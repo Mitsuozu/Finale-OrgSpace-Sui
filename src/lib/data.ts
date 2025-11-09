@@ -1,3 +1,4 @@
+
 import type { Member, WhitelistedDomain } from './types';
 
 // This is an in-memory "database". Data will reset on server restart.
@@ -86,4 +87,8 @@ export const findBadge = (id: string, address: string) => {
 
 export const findDomain = (id: string) => {
     return whitelistedDomains.find(d => d.id === id) || null;
+}
+
+export const isDomainWhitelisted = (domain: string) => {
+    return whitelistedDomains.some(d => d.domain.toLowerCase() === domain.toLowerCase());
 }

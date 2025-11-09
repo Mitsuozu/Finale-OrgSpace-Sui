@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useTransition } from 'react';
@@ -19,6 +20,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { mutate } from 'swr';
 
 export default function DomainManager({ domains }: { domains: WhitelistedDomain[] }) {
   const [newDomain, setNewDomain] = useState('');
@@ -33,6 +35,7 @@ export default function DomainManager({ domains }: { domains: WhitelistedDomain[
       } else {
         toast({ title: 'Success', description: result.success });
         setNewDomain('');
+        mutate('/api/domains'); // Revalidate the domains data
       }
     });
   };
@@ -44,6 +47,7 @@ export default function DomainManager({ domains }: { domains: WhitelistedDomain[
         toast({ variant: 'destructive', title: 'Error', description: result.error });
       } else {
         toast({ title: 'Success', description: result.success });
+        mutate('/api/domains'); // Revalidate the domains data
       }
     });
   };
