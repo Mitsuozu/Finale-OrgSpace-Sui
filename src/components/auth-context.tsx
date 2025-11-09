@@ -9,7 +9,7 @@ const getMockUserFromEmail = (email: string, zkAddress: string): User => {
     // This is a placeholder for admin logic. In a real app, this would be
     // determined by a role lookup in a database or from the contract state.
     // For now, let's make a specific email an admin for testing.
-    const isAdmin = email === 'admin@sui.org'; 
+    const isAdmin = email === 'davenvillar@gmail.com'; 
     return {
         name: email.split('@')[0],
         email: email,
